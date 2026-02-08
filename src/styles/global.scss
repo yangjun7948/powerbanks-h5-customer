@@ -1,0 +1,40 @@
+body {
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+}
+
+ol {
+  display: block;
+  list-style-type: decimal !important;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  padding-inline-start: 40px;
+  unicode-bidi: isolate;
+  margin-left: 15px !important;
+  /* 恢复为数字列表 */
+}
+
+p {
+  margin: 1rem 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1rem 0;
+}
+hr {
+  margin: 1rem 0;
+}
+
+.van-toast {
+  background: var(--van-toast-background) !important;
+}
