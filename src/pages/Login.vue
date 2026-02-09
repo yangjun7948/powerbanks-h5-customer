@@ -2,19 +2,10 @@
   <div class="min-h-screen flex flex-col login-container">
     <!-- 顶部导航栏 -->
     <div class="flex justify-between items-center px-4 py-4">
-      <van-icon
-        name="arrow-left"
-        size="20"
-        color="white"
-        @click="router.back()"
-      />
+      <van-icon name="arrow-left" size="20" color="white" @click="router.back()" />
       <div class="flex items-center gap-2">
         <!-- 语言切换 -->
-        <select
-          v-model="currentLanguage"
-          @change="changeLanguage"
-          class="bg-transparent text-white text-sm border border-white/30 rounded px-2 py-1"
-        >
+        <select v-model="currentLanguage" @change="changeLanguage" class="bg-transparent text-white text-sm border border-white/30 rounded px-2 py-1">
           <option value="zh-CN">中文</option>
           <option value="en-US">English</option>
           <option value="fr-FR">Français</option>
@@ -27,11 +18,7 @@
     <div class="flex-1 px-8 flex flex-col justify-center">
       <!-- Logo区域 -->
       <div class="flex flex-col items-center mb-8">
-        <img
-          src="@/assets/images/slogan.png"
-          alt="Power Bank"
-          class="logo-image mb-6"
-        />
+        <img src="@/assets/images/slogan.png" alt="Power Bank" class="logo-image mb-6" />
         <h1 class="logo-text text-3xl font-bold">{{ t("login.title") }}</h1>
         <p class="slogan text-sm mt-3">{{ t("login.slogan") }}</p>
       </div>
@@ -43,30 +30,14 @@
             <div class="text-gray-800 font-semibold text-base">
               {{ t("login.phoneLabel") }}
             </div>
-            <van-field
-              v-model="phone"
-              type="tel"
-              :placeholder="t('login.phonePlaceholder')"
-              name="validatePhone"
-              :rules="[{ validator: validatePhone }]"
-              class="custom-field"
-              :border="false"
-            />
+            <van-field v-model="phone" type="tel" :placeholder="t('login.phonePlaceholder')" name="validatePhone" :rules="[{ validator: validatePhone }]" class="custom-field" :border="false" />
           </div>
 
           <div class="space-y-2 mt-6">
             <div class="text-gray-800 font-semibold text-base">
               {{ t("login.codeLabel") }}
             </div>
-            <van-field
-              v-model="code"
-              center
-              clearable
-              :placeholder="t('login.codePlaceholder')"
-              :rules="[{ required: true, message: t('login.codeRequired') }]"
-              class="custom-field"
-              :border="false"
-            >
+            <van-field v-model="code" center clearable :placeholder="t('login.codePlaceholder')" :rules="[{ required: true, message: t('login.codeRequired') }]" class="custom-field" :border="false">
               <template #button>
                 <div
                   class="code-button text-sm font-medium"
@@ -75,13 +46,9 @@
                     'cursor-pointer': countdown === 0,
                     'cursor-not-allowed': countdown > 0,
                   }"
-                  @click="countdown === 0 && sendCode()"
+                  @click.prevent="countdown === 0 && sendCode()"
                 >
-                  {{
-                    countdown > 0
-                      ? countdown + t("login.retryAfter")
-                      : t("login.getCode")
-                  }}
+                  {{ countdown > 0 ? countdown + t("login.retryAfter") : t("login.getCode") }}
                 </div>
               </template>
             </van-field>
@@ -92,14 +59,7 @@
           </div>
 
           <div class="mt-8">
-            <van-button
-              block
-              round
-              type="primary"
-              native-type="submit"
-              :loading="loading"
-              class="login-button"
-            >
+            <van-button block round type="primary" native-type="submit" :loading="loading" class="login-button">
               {{ t("login.loginButton") }}
             </van-button>
           </div>
@@ -177,7 +137,9 @@ const sendCode = async () => {
 };
 
 // 提交表单
-const onSubmit = async () => {
+const onSubmit = async (values: any) => {
+  console.log("表单提交", values);
+
   if (!phone.value || !code.value) {
     showToast(t("login.fillComplete"));
     return;
@@ -185,12 +147,11 @@ const onSubmit = async () => {
 
   loading.value = true;
   try {
-    // 这里需要调用登录API
-    const openId = ss.get("openId");
-    const fingerprint = ss.get("fingerprint");
-    await userStore.phoneLogin(phone.value, code.value, openId, fingerprint);
+    await userStore.phoneLogin(phone.value, code.value);
+    showToast(t("login.loginSuccess"));
     router.push("/");
   } catch (error) {
+    console.error("登录失败:", error);
     showToast(t("login.loginFailed"));
   } finally {
     loading.value = false;

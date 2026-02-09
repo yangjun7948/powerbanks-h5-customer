@@ -21,10 +21,10 @@ export default defineConfig(({ mode, command }) => {
       open: true,
       proxy: {
         // https://cn.vitejs.dev/config/#server-proxy
-        "/prod-api": {
+        "/dev-api": {
           target: "http://localhost:9999",
           changeOrigin: true,
-          rewrite: (p) => p.replace(/^\/prod-api/, ""),
+          rewrite: (p) => p.replace(/^\/dev-api/, ""),
         },
       },
     },

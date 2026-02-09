@@ -14,30 +14,16 @@ export const useUserStore = defineStore("user", {
   getters: {
     getToken: (state) => state.token,
   },
-  actions: {
-    async anonymousLogin(fingerprint: string) {
-      if (this.token) {
-        return;
-      }
-      const openId = ss.get("openId");
-      const data = await loginByFingerprint(fingerprint, openId);
-      this.token = data.token;
-      ss.set("token", this.token);
-      const userInfo = await getUserInfo().data;
-      ss.set("userInfo", userInfo);
-    },
+  actions: {   
     async phoneLogin(
       phone: string,
       code: string,
-      openId: string,
-      fingerprint: string
     ) {
       const data = await loginByPhone({
         username: phone,
-        phoneCode: code,
-        openId: openId,
-        fingerprint: fingerprint,
+        phoneCode: code
       });
+      
       this.token = data.token;
       ss.set("token", this.token);
       const userInfo = await getUserInfo();

@@ -24,7 +24,7 @@ service.interceptors.request.use(
       config.headers = {};
     }
     //添加APPID
-    config.headers["appId"] = "H5_20250414";
+    config.headers["appId"] = "H5_20260203";
     // 是否需要设置 token
     const isToken = (config.headers || {}).isToken === false;
     // 是否需要防止数据重复提交
@@ -96,7 +96,7 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (res) => {
-    // 未设置状态码则默认成功状态
+     // 未设置状态码则默认成功状态
     const code = res.data.code || 200;
     // 获取错误信息
     const msg =
