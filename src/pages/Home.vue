@@ -6,11 +6,7 @@
     </div>
 
     <!-- Tab 切换 -->
-    <van-tabs
-      v-model:active="activeTab"
-      @change="onTabChange"
-      class="store-tabs"
-    >
+    <van-tabs v-model:active="activeTab" @change="onTabChange" class="store-tabs">
       <van-tab :title="t('store.allStores')" name="all"></van-tab>
       <van-tab :title="t('store.rentable')" name="rentable"></van-tab>
       <van-tab :title="t('store.returnable')" name="returnable"></van-tab>
@@ -18,18 +14,8 @@
 
     <!-- 门店列表 -->
     <div class="store-list">
-      <van-list
-        v-model:loading="loading"
-        :finished="finished"
-        :finished-text="t('common.noMore')"
-        @load="onLoad"
-      >
-        <div
-          v-for="store in storeList"
-          :key="store.id"
-          class="store-item"
-          @click="goToStoreDetail(store.id)"
-        >
+      <van-list v-model:loading="loading" :finished="finished" :finished-text="t('common.noMore')" @load="onLoad">
+        <div v-for="store in storeList" :key="store.id" class="store-item" @click="goToStoreDetail(store.id)">
           <div class="store-image">
             <img :src="store.image" :alt="store.name" />
           </div>
@@ -38,20 +24,12 @@
             <p class="store-address">{{ store.address }}</p>
             <div class="store-hours">
               <span>{{ t("store.businessHours") }}：</span>
-              <span>{{
-                store.isOpen24h ? t("store.open24h") : store.businessHours
-              }}</span>
+              <span>{{ store.isOpen24h ? t("store.open24h") : store.businessHours }}</span>
             </div>
             <div class="store-tags">
-              <span v-if="store.canRent" class="tag tag-rent">{{
-                t("store.available")
-              }}</span>
-              <span v-if="store.canReturn" class="tag tag-return">{{
-                t("store.canReturn")
-              }}</span>
-              <span v-if="store.almostFull" class="tag tag-warning">{{
-                t("store.almostFull")
-              }}</span>
+              <span v-if="store.canRent" class="tag tag-rent">{{ t("store.available") }}</span>
+              <span v-if="store.canReturn" class="tag tag-return">{{ t("store.canReturn") }}</span>
+              <span v-if="store.almostFull" class="tag tag-warning">{{ t("store.almostFull") }}</span>
             </div>
           </div>
           <div class="store-distance">
@@ -66,11 +44,7 @@
 
     <!-- 底部导航 -->
     <div class="bottom-nav">
-      <div
-        class="nav-item"
-        :class="{ active: currentRoute === 'orders' }"
-        @click="goToOrders"
-      >
+      <div class="nav-item" :class="{ active: currentRoute === 'orders' }" @click="goToOrders">
         <van-icon name="orders-o" size="24" />
         <span>{{ t("store.orders") }}</span>
       </div>
@@ -80,11 +54,7 @@
         </div>
         <span class="scan-text">{{ t("store.scanToRent") }}</span>
       </div>
-      <div
-        class="nav-item"
-        :class="{ active: currentRoute === 'mine' }"
-        @click="goToMine"
-      >
+      <div class="nav-item" :class="{ active: currentRoute === 'mine' }" @click="goToMine">
         <van-icon name="user-o" size="24" />
         <span>{{ t("store.mine") }}</span>
       </div>
@@ -218,8 +188,20 @@ const onLoad = async () => {
 
 // 跳转到门店详情
 const goToStoreDetail = (id: string) => {
-  // 跳转到押金页面
-  router.push("/deposit");
+  // 找到对应的门店信息
+  const store = storeList.value.find((s) => s.id === id);
+  if (store) {
+    // 跳转到门店详情页，传递门店信息
+    router.push({
+      path: `/store-detail/${id}`,
+      query: {
+        store: encodeURIComponent(JSON.stringify(store)),
+      },
+    });
+  } else {
+    // 如果没有找到，直接跳转（会从API获取）
+    router.push(`/store-detail/${id}`);
+  }
 };
 
 // 扫码租借

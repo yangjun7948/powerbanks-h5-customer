@@ -29,9 +29,10 @@ export function refundDeposit(data: { orderId: string }) {
 /**
  * 查询押金状态
  */
-export function getDepositStatus() {
+export function getDepositStatus(qrCode?: string) {
   return request({
     url: "/payment/deposit/status",
     method: "get",
+    params: qrCode ? { qrCode } : undefined,
   });
 }

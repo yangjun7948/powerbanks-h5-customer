@@ -8,6 +8,7 @@ export const lang = {
     failed: "Failed",
     noMore: "No more",
     tip: "Tip",
+    retry: "Retry",
   },
   routes: {
     home: "Home",
@@ -19,6 +20,7 @@ export const lang = {
     orderList: "Order List",
     mine: "Mine",
     qrScanner: "Scan QR Code",
+    storeDetail: "Store Detail",
     needLogin: "You need to register an account to continue",
     goLogin: "Register",
     thinkAgain: "Think Again",
@@ -207,5 +209,15 @@ export const lang = {
     manualInputMessage:
       "Please enter the device number on the power bank cabinet",
     featureComingSoon: "Feature coming soon",
+    depositStatusError: "Failed to query deposit status, please try again",
+  },
+  storeDetail: {
+    title: "Store Detail",
+    loadingMap: "Loading map...",
+    mapLoadError: "Failed to load map",
+    storeNotFound: "Store not found",
+    loadFailed: "Failed to load store information",
+    cannotRent: "This store is not available for rental",
+    rentNow: "Rent Now",
   },
 };

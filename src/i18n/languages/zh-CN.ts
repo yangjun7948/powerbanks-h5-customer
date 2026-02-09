@@ -8,6 +8,7 @@ export const lang = {
     failed: "失败",
     noMore: "没有更多了",
     tip: "提示",
+    retry: "重试",
   },
   routes: {
     home: "首页",
@@ -19,6 +20,7 @@ export const lang = {
     orderList: "订单列表",
     mine: "个人中心",
     qrScanner: "扫码租借",
+    storeDetail: "门店详情",
     needLogin: "您需要注册账号才能继续使用",
     goLogin: "去注册",
     thinkAgain: "再想想",
@@ -202,5 +204,15 @@ export const lang = {
     manualInputTitle: "手动输入设备编号",
     manualInputMessage: "请输入充电宝机柜上的设备编号",
     featureComingSoon: "功能开发中",
+    depositStatusError: "查询押金状态失败，请重试",
+  },
+  storeDetail: {
+    title: "门店详情",
+    loadingMap: "地图加载中...",
+    mapLoadError: "地图加载失败",
+    storeNotFound: "门店不存在",
+    loadFailed: "加载门店信息失败",
+    cannotRent: "该门店暂不可租借",
+    rentNow: "立即租借",
   },
 };

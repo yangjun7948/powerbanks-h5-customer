@@ -9,16 +9,7 @@
 
     <!-- 扫码区域 -->
     <div class="scanner-wrapper">
-      <qrcode-stream
-        v-if="showScanner"
-        :constraints="constraints"
-        :torch="torchActive"
-        :track="paintBoundingBox"
-        @detect="onDetect"
-        @camera-on="onCameraReady"
-        @error="onError"
-        class="scanner-video"
-      >
+      <qrcode-stream v-if="showScanner" :constraints="constraints" :torch="torchActive" :track="paintBoundingBox" @detect="onDetect" @camera-on="onCameraReady" @error="onError" class="scanner-video">
         <!-- 扫描框 -->
         <div class="scan-frame">
           <div class="corner corner-top-left"></div>
@@ -31,9 +22,7 @@
 
       <!-- 加载中 -->
       <div v-if="loading" class="loading-overlay">
-        <van-loading size="48" color="#10b981" vertical>{{
-          t("scanner.loading")
-        }}</van-loading>
+        <van-loading size="48" color="#10b981" vertical>{{ t("scanner.loading") }}</van-loading>
       </div>
     </div>
 
@@ -43,28 +32,13 @@
 
       <div class="action-buttons">
         <!-- 切换摄像头按钮 -->
-        <van-button
-          v-if="hasMultipleCameras"
-          round
-          plain
-          size="small"
-          class="action-btn"
-          @click="switchCamera"
-        >
+        <van-button v-if="hasMultipleCameras" round plain size="small" class="action-btn" @click="switchCamera">
           <van-icon name="replay" />
           {{ t("scanner.switchCamera") }}
         </van-button>
 
         <!-- 闪光灯按钮 -->
-        <van-button
-          v-if="torchSupported"
-          round
-          plain
-          size="small"
-          class="action-btn"
-          :class="{ active: torchActive }"
-          @click="toggleTorch"
-        >
+        <van-button v-if="torchSupported" round plain size="small" class="action-btn" :class="{ active: torchActive }" @click="toggleTorch">
           <van-icon :name="torchActive ? 'fire' : 'fire-o'" />
           {{ t("scanner.flashlight") }}
         </van-button>
@@ -100,10 +74,7 @@ const constraints = ref({
 });
 
 // 绘制边界框
-const paintBoundingBox = (
-  detectedCodes: any[],
-  ctx: CanvasRenderingContext2D
-) => {
+const paintBoundingBox = (detectedCodes: any[], ctx: CanvasRenderingContext2D) => {
   for (const detectedCode of detectedCodes) {
     const {
       boundingBox: { x, y, width, height },
@@ -127,9 +98,7 @@ const onCameraReady = async (capabilities: any) => {
   // 检查是否有多个摄像头
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(
-      (device) => device.kind === "videoinput"
-    );
+    const videoDevices = devices.filter((device) => device.kind === "videoinput");
     hasMultipleCameras.value = videoDevices.length > 1;
     console.log("摄像头数量:", videoDevices.length);
   } catch (error) {
@@ -146,7 +115,7 @@ const onDetect = (detectedCodes: any[]) => {
 };
 
 // 处理扫码结果
-const handleScanResult = (qrCode: string) => {
+const handleScanResult = async (qrCode: string) => {
   console.log("扫码结果:", qrCode);
 
   // 暂停扫描
@@ -154,12 +123,14 @@ const handleScanResult = (qrCode: string) => {
 
   // 这里根据二维码内容进行相应的处理
   // 例如：跳转到押金页面、显示设备信息等
-  showDialog({
-    title: t("scanner.scanSuccess"),
-    message: `${t("scanner.qrCodeContent")}: ${qrCode}`,
-    confirmButtonText: t("common.confirm"),
-    confirmButtonColor: "#10b981",
-  }).then(() => {
+  try {
+    await showDialog({
+      title: t("scanner.scanSuccess"),
+      message: `${t("scanner.qrCodeContent")}: ${qrCode}`,
+      confirmButtonText: t("common.confirm"),
+      confirmButtonColor: "#10b981",
+    });
+
     // todo 先调用接口判断押金够不够
     const res = await getDepositStatus(qrCode);
     if (res.data.depositStatus === "PAID") {
@@ -175,13 +146,17 @@ const handleScanResult = (qrCode: string) => {
     } else {
       showToast(t("scanner.depositStatusError"));
     }
-  });
+  } catch (error) {
+    // 用户取消对话框或其他错误
+    console.error("处理扫码结果失败:", error);
+    // 恢复扫描
+    showScanner.value = true;
+  }
 };
 
 // 切换摄像头
 const switchCamera = () => {
-  currentCamera.value =
-    currentCamera.value === "environment" ? "user" : "environment";
+  currentCamera.value = currentCamera.value === "environment" ? "user" : "environment";
   constraints.value = {
     ...constraints.value,
     facingMode: currentCamera.value,
@@ -203,9 +178,7 @@ const toggleTorch = () => {
   if (torchSupported.value) {
     torchActive.value = !torchActive.value;
     showToast({
-      message: torchActive.value
-        ? t("scanner.flashlightOn")
-        : t("scanner.flashlightOff"),
+      message: torchActive.value ? t("scanner.flashlightOn") : t("scanner.flashlightOff"),
       duration: 1000,
     });
   } else {

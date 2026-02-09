@@ -8,6 +8,7 @@ export const lang = {
     failed: "Échec",
     noMore: "Plus de données",
     tip: "Conseil",
+    retry: "Réessayer",
   },
   routes: {
     home: "Accueil",
@@ -19,6 +20,7 @@ export const lang = {
     orderList: "Liste des Commandes",
     mine: "Mon Compte",
     qrScanner: "Scanner le Code QR",
+    storeDetail: "Détails du Magasin",
     needLogin: "Vous devez créer un compte pour continuer",
     goLogin: "S'inscrire",
     thinkAgain: "Réfléchir",
@@ -211,5 +213,15 @@ export const lang = {
     manualInputMessage:
       "Veuillez entrer le numéro d'appareil sur le casier de batterie externe",
     featureComingSoon: "Fonction à venir",
+    depositStatusError: "Échec de la requête du statut de la caution, veuillez réessayer",
+  },
+  storeDetail: {
+    title: "Détails du Magasin",
+    loadingMap: "Chargement de la carte...",
+    mapLoadError: "Échec du chargement de la carte",
+    storeNotFound: "Magasin introuvable",
+    loadFailed: "Échec du chargement des informations du magasin",
+    cannotRent: "Ce magasin n'est pas disponible à la location",
+    rentNow: "Louer Maintenant",
   },
 };

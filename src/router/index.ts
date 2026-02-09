@@ -94,6 +94,16 @@ const routes: Array<RouteRecordRaw> = [
       noAuth: false,
     },
   },
+  {
+    path: "/store-detail/:id",
+    name: "StoreDetail",
+    component: () => import("@/pages/StoreDetail.vue"),
+    meta: {
+      title: "routes.storeDetail",
+      keepAlive: false,
+      noAuth: true,
+    },
+  },
 ];
 
 const router = createRouter({
