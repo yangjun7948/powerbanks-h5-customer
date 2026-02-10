@@ -61,6 +61,7 @@ export const lang = {
     almostFull: "即将遣满",
     distance: "距离",
     scanToRent: "扫码租借",
+    renting: "租借中",
     orders: "订单",
     mine: "我的",
     home: "首页",
@@ -214,5 +215,9 @@ export const lang = {
     loadFailed: "加载门店信息失败",
     cannotRent: "该门店暂不可租借",
     rentNow: "立即租借",
+    navigate: "导航到这里",
+    navigationNotSupported: "当前设备不支持导航功能",
+    navigationFailed: "无法发起导航，请稍后重试",
+    locationFailed: "获取当前位置失败，将仅使用门店位置导航",
   },
 };

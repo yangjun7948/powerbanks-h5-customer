@@ -10,8 +10,8 @@ export function getStoreList(params: {
   page?: number;
   pageSize?: number;
 }) {
-  return request({
-    url: "/store/list",
+  return request<any>({
+    url: "/app/store/list",
     method: "get",
     params,
   });
@@ -21,8 +21,8 @@ export function getStoreList(params: {
  * 获取门店详情
  */
 export function getStoreDetail(id: string) {
-  return request({
-    url: `/store/${id}`,
+  return request<any>({
+    url: `/app/store/${id}`,
     method: "get",
   });
 }

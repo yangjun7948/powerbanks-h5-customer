@@ -62,6 +62,7 @@ export const lang = {
     almostFull: "Almost Full",
     distance: "Distance",
     scanToRent: "Scan to Rent",
+    renting: "Renting",
     orders: "Orders",
     mine: "Mine",
     home: "Home",
@@ -219,5 +220,9 @@ export const lang = {
     loadFailed: "Failed to load store information",
     cannotRent: "This store is not available for rental",
     rentNow: "Rent Now",
+    navigate: "Navigate Here",
+    navigationNotSupported: "Navigation is not supported on this device",
+    navigationFailed: "Failed to start navigation, please try again later",
+    locationFailed: "Failed to get current location, navigating to store only",
   },
 };

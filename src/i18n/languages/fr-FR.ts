@@ -62,6 +62,7 @@ export const lang = {
     almostFull: "Presque plein",
     distance: "Distance",
     scanToRent: "Scanner pour louer",
+    renting: "En Location",
     orders: "Commandes",
     mine: "Mon compte",
     home: "Accueil",
@@ -223,5 +224,9 @@ export const lang = {
     loadFailed: "Échec du chargement des informations du magasin",
     cannotRent: "Ce magasin n'est pas disponible à la location",
     rentNow: "Louer Maintenant",
+    navigate: "Y aller",
+    navigationNotSupported: "La navigation n'est pas prise en charge sur cet appareil",
+    navigationFailed: "Échec du démarrage de la navigation, veuillez réessayer plus tard",
+    locationFailed: "Échec de l'obtention de la position actuelle, navigation vers le magasin uniquement",
   },
 };

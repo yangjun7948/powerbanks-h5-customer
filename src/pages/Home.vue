@@ -17,7 +17,7 @@
       <van-list v-model:loading="loading" :finished="finished" :finished-text="t('common.noMore')" @load="onLoad">
         <div v-for="store in storeList" :key="store.id" class="store-item" @click="goToStoreDetail(store.id)">
           <div class="store-image">
-            <img :src="store.image" :alt="store.name" />
+            <img :src="getFirstImage(store.images)" :alt="store.name" />
           </div>
           <div class="store-info">
             <h3 class="store-name">{{ store.name }}</h3>
@@ -33,7 +33,7 @@
             </div>
           </div>
           <div class="store-distance">
-            <div class="distance-text">
+            <div class="distance-text" v-if="!!store.distance">
               {{ formatDistance(store.distance) }}
             </div>
             <van-icon name="arrow" class="arrow-icon" />
@@ -49,10 +49,10 @@
         <span>{{ t("store.orders") }}</span>
       </div>
       <div class="nav-item nav-center" @click="handleScanToRent">
-        <div class="scan-button">
-          <van-icon name="scan" size="28" color="#fff" />
+        <div class="scan-button" :class="{ 'renting-button': hasRentingOrder }">
+          <van-icon :name="hasRentingOrder ? 'clock-o' : 'scan'" size="28" color="#fff" />
         </div>
-        <span class="scan-text">{{ t("store.scanToRent") }}</span>
+        <span class="scan-text">{{ hasRentingOrder ? t("store.renting") : t("store.scanToRent") }}</span>
       </div>
       <div class="nav-item" :class="{ active: currentRoute === 'mine' }" @click="goToMine">
         <van-icon name="user-o" size="24" />
@@ -68,7 +68,10 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { showToast } from "vant";
 import { getStoreList } from "@/api/store";
+import { getRentingOrder } from "@/api/order";
+import { useUserStore } from "@/store/modules/user";
 
+const userStore = useUserStore();
 const { t } = useI18n();
 const router = useRouter();
 
@@ -80,6 +83,11 @@ const loading = ref(false);
 const finished = ref(false);
 const page = ref(1);
 const pageSize = 10;
+const latitude = ref<number | null>(null);
+const longitude = ref<number | null>(null);
+const locationError = ref<string | null>(null);
+const hasRentingOrder = ref(false);
+const rentingOrderId = ref<string | null>(null);
 
 // 模拟数据（实际应该从API获取）
 const mockStores = [
@@ -149,38 +157,75 @@ const onTabChange = (name: string | number) => {
   onLoad();
 };
 
+// 获取用户位置
+const getUserLocation = (): Promise<GeolocationPosition> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("浏览器不支持定位功能"));
+      return;
+    }
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true, // 高精度定位
+      timeout: 10000, // 超时时间 10 秒
+      maximumAge: 60000, // 缓存时间 60 秒
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve(position);
+      },
+      (error) => {
+        let errorMessage = "获取位置失败";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "用户拒绝了定位请求";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "位置信息不可用";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "定位请求超时";
+            break;
+        }
+        reject(new Error(errorMessage));
+      },
+      options
+    );
+  });
+};
+
 // 加载数据
 const onLoad = async () => {
-  // if (loading.value) return;
+  if (loading.value) return;
 
-  // loading.value = true;
-
+  loading.value = true;
   try {
-    // 模拟API调用
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // 调用API，带上经纬度信息
+    const params: any = {
+      params: {
+        status: activeTab.value,
+      },
+      page: page.value,
+      pageSize,
+    };
 
-    // 实际应该调用API
-    // const res = await getStoreList({
-    //   status: activeTab.value,
-    //   page: page.value,
-    //   pageSize
-    // });
-
-    // 使用模拟数据
-    const newStores = mockStores.map((store) => ({
-      ...store,
-      id: `${store.id}_${page.value}`,
-    }));
-
-    storeList.value.push(...newStores);
-    page.value++;
-
-    // 模拟数据加载完成
-    if (page.value > 2) {
-      finished.value = true;
+    // 如果有位置信息，添加到请求参数中
+    if (latitude.value !== null && longitude.value !== null) {
+      params.lat = latitude.value;
+      params.lng = longitude.value;
     }
-  } catch (error) {
-    showToast("加载失败");
+
+    const res: any = await getStoreList(params);
+
+    // API 返回的数据结构：res.data 或 res.data.rows 或 res.rows
+    const rows = res?.data?.rows || res?.rows || res?.data || [];
+    storeList.value.push(...rows);
+    page.value++;
+    finished.value = rows.length < pageSize;
+  } catch (error: any) {
+    console.error("加载门店列表失败:", error);
+    showToast(error?.message || "加载失败");
   } finally {
     loading.value = false;
   }
@@ -206,8 +251,33 @@ const goToStoreDetail = (id: string) => {
 
 // 扫码租借
 const handleScanToRent = () => {
-  // 跳转到扫码页面
+  // 如果有进行中的订单，跳转到订单详情
+  if (hasRentingOrder.value && rentingOrderId.value) {
+    router.push(`/renting-order?id=${rentingOrderId.value}`);
+    return;
+  }
+  // 否则跳转到扫码页面
   router.push("/qr-scanner");
+};
+
+// 查询进行中的订单
+const checkRentingOrder = async () => {
+  try {
+    const res: any = await getRentingOrder(userStore.userInfo.userId);
+    // 根据 API 返回的数据结构判断是否有进行中的订单
+    if (res?.data?.id || res?.id) {
+      hasRentingOrder.value = true;
+      rentingOrderId.value = res?.data?.id || res?.id;
+    } else {
+      hasRentingOrder.value = false;
+      rentingOrderId.value = null;
+    }
+  } catch (error) {
+    // 查询失败，默认没有进行中的订单
+    console.warn("查询进行中订单失败:", error);
+    hasRentingOrder.value = false;
+    rentingOrderId.value = null;
+  }
 };
 
 // 跳转到订单列表
@@ -220,9 +290,63 @@ const goToMine = () => {
   router.push("/mine");
 };
 
+// 是否正在等待定位
+const isWaitingForLocation = ref(false);
+
+// 初始化位置
+const initLocation = async () => {
+  isWaitingForLocation.value = true;
+  try {
+    const position = await getUserLocation();
+    latitude.value = position.coords.latitude;
+    longitude.value = position.coords.longitude;
+    locationError.value = null;
+    console.log("获取位置成功:", latitude.value, longitude.value);
+
+    // 如果已经有门店列表，重新加载以获取基于位置的数据
+    if (storeList.value.length > 0) {
+      storeList.value = [];
+      page.value = 1;
+      finished.value = false;
+      await onLoad();
+    }
+  } catch (error: any) {
+    console.warn("获取位置失败:", error.message);
+    locationError.value = error.message;
+    // 定位失败不影响，继续使用已加载的数据
+  } finally {
+    isWaitingForLocation.value = false;
+  }
+};
+const getFirstImage = (images: string | string[] | any[]) => {
+  if (!images) return null;
+  const baseUrl = import.meta.env.VITE_APP_BASE_API;
+  if (typeof images === "string") {
+    const imageList = images.split(",").filter((item) => item);
+    if (imageList.length > 0) {
+      const firstImage = imageList[0].trim();
+      return firstImage.indexOf(baseUrl) === -1 ? baseUrl + firstImage : firstImage;
+    }
+  } else if (Array.isArray(images) && images.length > 0) {
+    const firstImage = images[0];
+    if (typeof firstImage === "string") {
+      return firstImage.indexOf(baseUrl) === -1 ? baseUrl + firstImage : firstImage;
+    } else if (firstImage && typeof firstImage === "object" && firstImage.url) {
+      return firstImage.url.indexOf(baseUrl) === -1 ? baseUrl + firstImage.url : firstImage.url;
+    }
+  }
+  return null;
+};
 // 初始化
 onMounted(() => {
-  // 可以在这里获取用户位置等
+  // 查询进行中的订单
+  checkRentingOrder();
+  
+  // 先立即加载一次数据（不等待定位），避免页面一直loading
+  onLoad();
+
+  // 然后异步获取用户位置（如果获取成功且已有数据，会重新加载数据）
+  initLocation();
 });
 </script>
 
@@ -438,9 +562,18 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
+.scan-button.renting-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
 .scan-button:active {
   transform: scale(0.95);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.scan-button.renting-button:active {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
 .scan-text {

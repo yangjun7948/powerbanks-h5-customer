@@ -147,8 +147,7 @@ const onSubmit = async (values: any) => {
 
   loading.value = true;
   try {
-    await userStore.phoneLogin(phone.value, code.value);
-    showToast(t("login.loginSuccess"));
+    await userStore.phoneLogin(phone.value, code.value);    
     router.push("/");
   } catch (error) {
     console.error("登录失败:", error);

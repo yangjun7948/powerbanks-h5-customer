@@ -10,7 +10,10 @@
     <!-- 门店信息卡片 -->
     <div class="store-info-card" v-if="storeInfo">
       <div class="store-header">
-        <h2 class="store-name">{{ storeInfo.name }}</h2>
+        <div class="store-name-row">
+          <h2 class="store-name">{{ storeInfo.name }}</h2>
+          <van-icon name="guide-o" class="nav-icon" @click="openNavigation" />
+        </div>
         <div class="store-tags">
           <span v-if="storeInfo.canRent" class="tag tag-rent">{{ t("store.available") }}</span>
           <span v-if="storeInfo.canReturn" class="tag tag-return">{{ t("store.canReturn") }}</span>
@@ -165,11 +168,11 @@ const initMap = async () => {
     await loadGoogleMapsAPI();
 
     // 解析地址获取坐标（如果地址存在但坐标不存在）
-    let lat = storeInfo.value.latitude || 22.3193; // 默认香港坐标
-    let lng = storeInfo.value.longitude || 114.1694;
+    let lat = storeInfo.value.lat || 22.3193; // 默认香港坐标
+    let lng = storeInfo.value.lng || 114.1694;
 
     // 如果只有地址没有坐标，尝试地理编码
-    if (!storeInfo.value.latitude && !storeInfo.value.longitude && storeInfo.value.address) {
+    if (!storeInfo.value.lat && !storeInfo.value.lng && storeInfo.value.address) {
       try {
         const googleMaps = (window as any).google?.maps;
         if (googleMaps) {
@@ -293,6 +296,89 @@ const fetchStoreDetail = async () => {
   }
 };
 
+// 打开系统导航
+const openNavigation = async () => {
+  if (!storeInfo.value) {
+    return;
+  }
+
+  const destLat = storeInfo.value.lat;
+  const destLng = storeInfo.value.lng;
+  const address = storeInfo.value.address || storeInfo.value.name;
+
+  if (!destLat && !destLng && !address) {
+    showToast(t("storeDetail.navigationFailed"));
+    return;
+  }
+
+  // 目的地参数（优先使用经纬度）
+  const destination = destLat && destLng ? `${destLat},${destLng}` : encodeURIComponent(address);
+
+  let origin = "";
+  // 尝试获取当前位置，用于作为起点
+  if (navigator.geolocation) {
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          (err) => reject(err),
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000,
+          }
+        );
+      });
+      origin = `${position.coords.latitude},${position.coords.longitude}`;
+    } catch (error) {
+      console.warn("获取当前位置失败，用门店位置导航:", error);
+      showToast(t("storeDetail.locationFailed"));
+    }
+  }
+
+  const ua = navigator.userAgent || "";
+  const isIOS = /iP(hone|ad|od)/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+
+  let url = "";
+
+  if (isIOS) {
+    // Apple Maps
+    if (destLat && destLng) {
+      url = `http://maps.apple.com/?daddr=${destination}&dirflg=d`;
+      if (origin) {
+        url += `&saddr=${origin}`;
+      }
+    } else {
+      url = `http://maps.apple.com/?q=${destination}`;
+    }
+  } else if (isAndroid) {
+    // Android 上优先使用 Google Maps
+    if (destLat && destLng) {
+      url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+      if (origin) {
+        url += `&origin=${origin}`;
+      }
+    } else {
+      url = `https://www.google.com/maps/search/?api=1&query=${destination}`;
+    }
+  } else {
+    // 其他平台，使用通用的 Google Maps URL
+    if (destLat && destLng) {
+      url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+    } else {
+      url = `https://www.google.com/maps/search/?api=1&query=${destination}`;
+    }
+  }
+
+  if (!url) {
+    showToast(t("storeDetail.navigationNotSupported"));
+    return;
+  }
+
+  window.location.href = url;
+};
+
 // 租借处理
 const handleRent = () => {
   if (!storeInfo.value?.canRent) {
@@ -357,11 +443,34 @@ onUnmounted(() => {
   margin-bottom: 12px;
 }
 
+.store-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .store-name {
   font-size: 20px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 8px 0;
+  margin: 0;
+  flex: 1;
+}
+
+.nav-icon {
+  color: #10b981;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.nav-icon:active {
+  transform: scale(0.9);
+  opacity: 0.7;
 }
 
 .store-tags {
