@@ -26,3 +26,12 @@ export function getStoreDetail(id: string) {
     method: "get",
   });
 }
+/**
+ * 根据设备编号获取门店详情
+ */
+export function getStoreDetailBySn(sn: string) {
+  return request<any>({
+    url: `/app/store/detail/sn/${sn}`,
+    method: "get",
+  });
+}

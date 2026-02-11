@@ -16,26 +16,15 @@
       </div>
     </div>
 
-    <!-- 我的钱包 -->
+    <!-- 我的钱包（仅押金） -->
     <div class="wallet-section">
       <div class="section-title">{{ t("mine.myWallet") }}</div>
       <div class="wallet-card">
         <div class="wallet-item">
-          <div class="wallet-value">¥{{ balance }}</div>
-          <div class="wallet-label">{{ t("mine.balance") }}</div>
-        </div>
-        <div class="wallet-divider"></div>
-        <div class="wallet-item">
           <div class="wallet-value">¥{{ deposit }}</div>
           <div class="wallet-label">{{ t("mine.deposit") }}</div>
         </div>
-        <van-button
-          type="primary"
-          size="small"
-          round
-          class="withdraw-btn"
-          @click="handleWithdraw"
-        >
+        <van-button type="primary" size="small" round class="withdraw-btn" @click="handleWithdraw">
           {{ t("mine.withdraw") }}
         </van-button>
       </div>
@@ -50,32 +39,13 @@
         </div>
         <van-icon name="arrow" color="#ccc" />
       </div>
-
-      <div class="menu-item" @click="goToCoupon">
-        <div class="menu-left">
-          <van-icon name="coupon-o" size="20" color="#f59e0b" />
-          <span class="menu-text">{{ t("mine.myCoupons") }}</span>
-        </div>
-        <div class="menu-right">
-          <span class="badge" v-if="couponCount > 0">{{ couponCount }}</span>
-          <van-icon name="arrow" color="#ccc" />
-        </div>
-      </div>
-
-      <div class="menu-item" @click="goToAddress">
-        <div class="menu-left">
-          <van-icon name="location-o" size="20" color="#3b82f6" />
-          <span class="menu-text">{{ t("mine.myAddress") }}</span>
-        </div>
-        <van-icon name="arrow" color="#ccc" />
-      </div>
     </div>
 
     <!-- 设置菜单 -->
     <div class="menu-section">
       <div class="menu-item" @click="goToLanguage">
         <div class="menu-left">
-          <van-icon name="globe-o" size="20" color="#8b5cf6" />
+          <van-icon name="font-o" size="20" color="#8b5cf6" />
           <span class="menu-text">{{ t("mine.language") }}</span>
         </div>
         <div class="menu-right">
@@ -108,46 +78,64 @@
       </van-button>
     </div>
 
+    <!-- 语言选择弹窗 -->
+    <van-action-sheet v-model:show="showLanguageSheet" :title="t('mine.selectLanguage')" :actions="languageOptions" cancel-text="" @select="onLanguageSelect" />
+
     <!-- 底部导航 -->
-    <div class="bottom-nav">
-      <div class="nav-item" @click="goToHome">
-        <van-icon name="wap-home-o" size="24" />
-        <span>{{ t("store.home") }}</span>
-      </div>
-      <div class="nav-item nav-center" @click="handleScanToRent">
-        <div class="scan-button">
-          <van-icon name="scan" size="28" color="#fff" />
-        </div>
-        <span class="scan-text">{{ t("store.scanToRent") }}</span>
-      </div>
-      <div class="nav-item active">
-        <van-icon name="user-o" size="24" />
-        <span>{{ t("store.mine") }}</span>
-      </div>
-    </div>
+    <BottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { showToast, showDialog } from "vant";
-import { ss } from "@/utils/storage/local";
+import { useUserStore } from "@/store/modules/user";
+import { getUserInfo } from "@/api/user";
+import { setLanguage } from "@/i18n";
+import { BottomNav } from "@/components/common";
 
 const { t, locale } = useI18n();
 const router = useRouter();
+const userStore = useUserStore();
 
-// 用户信息
-const username = ref("用户123456");
-const userId = ref("123456789");
-const balance = ref("96.00");
-const deposit = ref("99.00");
-const couponCount = ref(2);
+// 语言选择相关
+const showLanguageSheet = ref(false);
+const languageOptions = computed(() => {
+  const options = [
+    { name: "中文", value: "zh-CN" },
+    { name: "English", value: "en-US" },
+    { name: "Français", value: "fr-FR" },
+  ];
+  // 高亮当前选中的语言
+  return options.map((option) => ({
+    ...option,
+    className: option.value === locale.value ? "van-action-sheet__item--active" : "",
+  }));
+});
 
 // 是否登录
 const isLoggedIn = computed(() => {
-  return !!ss.get("token");
+  return !!userStore.token && !!userStore.userInfo?.userId;
+});
+
+// 用户名和ID（使用真实数据）
+const username = computed(() => {
+  const info = userStore.userInfo || {};
+  return info.nickname || info.username || info.phone || "";
+});
+
+const userId = computed(() => {
+  return userStore.userInfo?.userId || "";
+});
+
+// 仅显示押金（没有余额）
+const deposit = computed(() => {
+  const info = userStore.userInfo || {};
+  const raw = info.depositAmount ?? info.deposit ?? 0;
+  const num = typeof raw === "string" ? parseFloat(raw) : Number(raw || 0);
+  return num.toFixed(2);
 });
 
 // 当前语言名称
@@ -160,11 +148,6 @@ const currentLanguageName = computed(() => {
   return langMap[locale.value] || "中文";
 });
 
-// 跳转到首页
-const goToHome = () => {
-  router.push("/");
-};
-
 // 跳转到登录
 const goToLogin = () => {
   router.push("/login");
@@ -175,19 +158,20 @@ const goToOrders = () => {
   router.push("/order-list");
 };
 
-// 跳转到优惠券
-const goToCoupon = () => {
-  showToast(t("mine.featureComingSoon"));
-};
-
-// 跳转到地址管理
-const goToAddress = () => {
-  showToast(t("mine.featureComingSoon"));
-};
-
 // 跳转到语言设置
 const goToLanguage = () => {
-  showToast(t("mine.featureComingSoon"));
+  showLanguageSheet.value = true;
+};
+
+// 选择语言
+const onLanguageSelect = (action: any) => {
+  if (action && action.value && action.value !== locale.value) {
+    setLanguage(action.value);
+    showToast(t("mine.languageChanged"));
+    // 可选：刷新页面以应用新语言
+    // window.location.reload();
+  }
+  showLanguageSheet.value = false;
 };
 
 // 跳转到关于我们
@@ -206,12 +190,8 @@ const handleWithdraw = () => {
     showToast(t("mine.pleaseLoginFirst"));
     return;
   }
+  // 目前仅展示提示，后续可接入押金退款功能
   showToast(t("mine.featureComingSoon"));
-};
-
-// 扫码租借
-const handleScanToRent = () => {
-  showToast(t("mine.scanFeature"));
 };
 
 // 退出登录
@@ -224,13 +204,26 @@ const handleLogout = () => {
     confirmButtonColor: "#ef4444",
     showCancelButton: true,
   }).then(() => {
-    ss.remove("token");
-    username.value = "";
-    userId.value = "";
+    userStore.logout();
     showToast(t("mine.logoutSuccess"));
     router.push("/login");
   });
 };
+
+// 进入页面时刷新一次用户信息
+onMounted(async () => {
+  if (!userStore.token) return;
+  try {
+    const res: any = await getUserInfo();
+    const data = res?.poweruser || res;
+    if (data) {
+      userStore.userInfo = data;
+    }
+  } catch (error) {
+    // 静默失败即可，避免打扰用户
+    console.warn("刷新用户信息失败:", error);
+  }
+});
 </script>
 
 <style scoped>
@@ -423,65 +416,4 @@ const handleLogout = () => {
   opacity: 0.7;
 }
 
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: #666;
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.nav-item.active {
-  color: #10b981;
-}
-
-.nav-item:active {
-  opacity: 0.7;
-}
-
-.nav-center {
-  position: relative;
-  top: -10px;
-}
-
-.scan-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-  transition: all 0.3s ease;
-}
-
-.scan-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
-}
-
-.scan-text {
-  margin-top: 4px;
-  color: #333;
-  font-weight: 500;
-}
 </style>

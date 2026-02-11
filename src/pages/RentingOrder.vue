@@ -9,46 +9,45 @@
 
     <!-- 内容区域 -->
     <div class="content">
+      <!-- 加载状态 -->
+      <van-loading v-if="loading" type="spinner" vertical>{{ t("orderList.loading") }}</van-loading>
+
       <!-- 状态标题 -->
-      <div class="status-header">
-        <span class="status-text">{{ t("rentingOrder.renting") }}</span>
+      <div v-if="!loading" class="status-header">
+        <span class="status-text">{{ statusText }}</span>
         <van-icon name="replay" class="refresh-icon" @click="refreshOrder" />
       </div>
 
       <!-- 提示信息 -->
-      <div class="tip-text">{{ t("rentingOrder.tip") }}</div>
+      <div v-if="!loading" class="tip-text">{{ t("rentingOrder.tip") }}</div>
 
       <!-- 时长和金额卡片 -->
-      <div class="duration-card">
+      <div v-if="!loading" class="duration-card">
         <div class="duration-item">
           <div class="duration-value">{{ usageDuration }}</div>
           <div class="duration-label">{{ t("rentingOrder.usageTime") }}</div>
         </div>
         <div class="duration-item">
-          <div class="duration-value">
-            {{ estimatedAmount }}{{ t("rentingOrder.currency") }}
-          </div>
+          <div class="duration-value">{{ estimatedAmount }}{{ t("rentingOrder.currency") }}</div>
           <div class="duration-label">
-            {{ t("rentingOrder.estimatedAmount") }}
+            {{ orderData?.isEstimated ? t("rentingOrder.estimatedAmount") : t("rentingOrder.orderAmount") }}
           </div>
         </div>
-        <van-icon
-          name="arrow-up"
-          class="collapse-icon"
-          @click="toggleCollapse"
-          :class="{ collapsed: isCollapsed }"
-        />
+        <van-icon name="arrow-up" class="collapse-icon" @click="toggleCollapse" :class="{ collapsed: isCollapsed }" />
       </div>
 
       <!-- 价格明细 -->
-      <div v-show="!isCollapsed" class="price-detail">
+      <div v-if="!loading" v-show="!isCollapsed" class="price-detail">
         <div class="detail-title">{{ t("rentingOrder.priceDetail") }}</div>
 
-        <div class="detail-row">
+        <div class="detail-row" v-if="orderData?.isEstimated">
           <span class="detail-label">{{ t("rentingOrder.orderAmount") }}</span>
-          <span class="detail-value"
-            >{{ orderAmount }} {{ t("rentingOrder.currency") }}</span
-          >
+          <span class="detail-value">{{ orderAmount }} {{ t("rentingOrder.currency") }}</span>
+        </div>        
+
+        <div class="detail-row" v-if="orderData?.borrowStore?.cabinetSn">
+          <span class="detail-label">{{ t("rentingOrder.cabinetSn") }}</span>
+          <span class="detail-value">{{ orderData.borrowStore.cabinetSn }}</span>
         </div>
 
         <div class="pricing-rules">
@@ -57,7 +56,7 @@
       </div>
 
       <!-- 租借信息 -->
-      <div class="rental-info">
+      <div v-if="!loading" class="rental-info">
         <div class="section-title">{{ t("rentingOrder.rentalInfo") }}</div>
 
         <div class="info-row">
@@ -73,34 +72,13 @@
         <div class="info-row">
           <span class="info-label">{{ t("rentingOrder.rentalLocation") }}</span>
           <span class="info-value">{{ rentalLocation }}</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">{{ t("rentingOrder.returnTime") }}</span>
-          <span class="info-value gray">--</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">{{ t("rentingOrder.returnLocation") }}</span>
-          <span class="info-value gray">--</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">{{ t("rentingOrder.powerBankSN") }}</span>
-          <span class="info-value">{{ powerBankSN }}</span>
-        </div>
+        </div>           
 
         <div class="info-row">
           <span class="info-label">{{ t("rentingOrder.orderNumber") }}</span>
           <span class="info-value">
             {{ orderNumber }}
-            <van-button
-              plain
-              size="mini"
-              type="default"
-              class="copy-btn"
-              @click="copyOrderNumber"
-            >
+            <van-button plain size="mini" type="default" class="copy-btn" @click="copyOrderNumber">
               {{ t("rentingOrder.copy") }}
             </van-button>
           </span>
@@ -108,23 +86,11 @@
       </div>
 
       <!-- 底部按钮 -->
-      <div class="action-buttons">
-        <van-button
-          type="warning"
-          block
-          round
-          class="return-store-button"
-          @click="viewReturnStores"
-        >
+      <div v-if="!loading" class="action-buttons">
+        <van-button type="warning" block round class="return-store-button" @click="viewReturnStores">
           {{ t("rentingOrder.viewReturnStores") }}
         </van-button>
-        <van-button
-          plain
-          block
-          round
-          class="contact-button"
-          @click="contactService"
-        >
+        <van-button plain block round class="contact-button" @click="contactService">
           {{ t("rentingOrder.contactService") }}
         </van-button>
       </div>
@@ -133,77 +99,178 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { showToast } from "vant";
+import { getOrderDetail, getRentingOrder } from "@/api/order";
+import { useUserStore } from "@/store/modules/user";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
 
-// 订单信息
-const usageDuration = ref("1分钟");
-const estimatedAmount = ref("0");
-const orderAmount = ref("0");
-const rentalTime = ref("2026-01-24 17:45:00");
-const rentalLocation = ref("CHOISAN丘山咖啡（设计公社店）");
-const powerBankSN = ref("A4113325120104101");
-const orderNumber = ref("2014997816753143864");
+// 订单数据
+const orderData = ref<any>(null);
+const loading = ref(false);
 
 // 折叠状态
 const isCollapsed = ref(false);
 
 // 计时器
 let durationTimer: number | null = null;
-let startTime = new Date("2026-01-24 17:45:00").getTime();
 
-// 更新使用时长
+// 计算属性
+const usageDuration = computed(() => {
+  if (!orderData.value) return formatDuration(0);
+  return orderData.value.durationText || formatDuration(orderData.value.durationMinutes || 0);
+});
+
+const estimatedAmount = computed(() => {
+  if (!orderData.value) return "0.00";
+  return formatAmount(orderData.value.estimatedAmount || 0);
+});
+
+const orderAmount = computed(() => {
+  if (!orderData.value) return "0.00";
+  return formatAmount(orderData.value.amount || 0);
+});
+
+const rentalTime = computed(() => {
+  if (!orderData.value) return "--";
+  return formatDateTime(orderData.value.startTime || orderData.value.createTime);
+});
+
+const rentalLocation = computed(() => {
+  if (!orderData.value?.borrowStore) return "--";
+  return orderData.value.borrowStore.storeName || orderData.value.borrowStore.storeAddress || "--";
+});
+
+const powerBankSN = computed(() => {
+  if (!orderData.value?.powerbank) return "--";
+  return orderData.value.powerbank.powerbankSn || "--";
+});
+
+const orderNumber = computed(() => {
+  if (!orderData.value) return "--";
+  return orderData.value.orderNo || orderData.value.orderNumber || "--";
+});
+
+const statusText = computed(() => {
+  if (!orderData.value) return t("rentingOrder.renting");
+  return orderData.value.statusText || t("rentingOrder.renting");
+});
+
+// 格式化时长
+const formatDuration = (minutes: number) => {
+  if (!minutes || minutes <= 0) {
+    return `0${t("rentingOrder.minutes")}`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  // 获取当前语言环境，判断是否需要空格（中文不需要空格，英文和法文需要）
+  const currentLocale = locale.value || 'zh-CN';
+  const needSpace = currentLocale !== 'zh-CN';
+  const space = needSpace ? ' ' : '';
+  
+  if (hours > 0) {
+    const hourText = hours === 1 ? t("rentingOrder.hour") : t("rentingOrder.hours");
+    if (mins > 0) {
+      const minuteText = mins === 1 ? t("rentingOrder.minute") : t("rentingOrder.minutes");
+      return `${hours}${space}${hourText}${space}${mins}${space}${minuteText}`;
+    }
+    return `${hours}${space}${hourText}`;
+  }
+  const minuteText = mins === 1 ? t("rentingOrder.minute") : t("rentingOrder.minutes");
+  return `${mins}${space}${minuteText}`;
+};
+
+// 格式化金额
+const formatAmount = (amount: number | string) => {
+  if (amount === null || amount === undefined) return "0.00";
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return num.toFixed(2);
+};
+
+// 格式化日期时间
+const formatDateTime = (dateTime: string | Date) => {
+  if (!dateTime) return "--";
+  const date = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
+  if (isNaN(date.getTime())) return "--";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+// 获取订单详情
+const fetchOrderDetail = async () => {
+  loading.value = true;
+  try {
+    const orderId = route.query.id as string;
+    let res: any;
+
+    // 如果有订单ID，使用订单ID查询；否则使用用户ID查询进行中的订单
+    if (orderId) {
+      res = await getOrderDetail(orderId);
+    } else if (userStore.userInfo?.userId) {
+      res = await getRentingOrder(userStore.userInfo.userId);
+    } else {
+      showToast(t("rentingOrder.loginRequired"));
+      router.back();
+      return;
+    }
+
+    // 处理返回数据
+    const data = res?.data || res;
+    if (data) {
+      orderData.value = data;
+
+      // 如果订单已结束，跳转到完成页面
+      if (data.status !== 1 || data.endTime) {
+        router.replace(`/order-complete?id=${data.orderId || orderId}`);
+        return;
+      }
+    } else {
+      showToast(t("rentingOrder.orderNotFound"));
+      router.back();
+    }
+  } catch (error: any) {
+    console.error("获取订单详情失败:", error);
+    showToast(t("rentingOrder.loadFailed"));
+    router.back();
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 更新使用时长（实时计算）
 const updateDuration = () => {
+  if (!orderData.value?.startTime) return;
+
+  const startTime = new Date(orderData.value.startTime).getTime();
   const now = Date.now();
   const diff = now - startTime;
   const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
 
-  if (hours > 0) {
-    usageDuration.value = `${hours}小时${mins}分钟`;
-  } else {
-    usageDuration.value = `${mins}分钟`;
-  }
-
-  // 计算预估金额（5分钟内免费，超过按规则计费）
-  if (minutes <= 5) {
-    estimatedAmount.value = "0";
-    orderAmount.value = "0";
-  } else {
-    // 超过5分钟，不足1小时按1小时计算
-    const chargeMinutes = minutes - 5;
-    let chargeHours = Math.ceil(chargeMinutes / 60);
-
-    if (chargeHours > 0) {
-      // 第一个小时的费用（假设是200 FCFA）
-      let amount = 200;
-
-      // 超过1小时的部分，每30分钟100 FCFA
-      if (chargeMinutes > 60) {
-        const extraMinutes = chargeMinutes - 60;
-        const extra30mins = Math.ceil(extraMinutes / 30);
-        amount += extra30mins * 100;
-      }
-
-      // 封顶5000 FCFA
-      amount = Math.min(amount, 5000);
-
-      estimatedAmount.value = amount.toString();
-      orderAmount.value = amount.toString();
-    }
+  // 更新时长文本
+  if (orderData.value) {
+    orderData.value.durationMinutes = minutes;
+    orderData.value.durationText = formatDuration(minutes);
   }
 };
 
 // 刷新订单
-const refreshOrder = () => {
+const refreshOrder = async () => {
   showToast(t("rentingOrder.refreshing"));
-  updateDuration();
+  await fetchOrderDetail();
 };
 
 // 切换折叠
@@ -213,8 +280,11 @@ const toggleCollapse = () => {
 
 // 复制订单号
 const copyOrderNumber = () => {
+  const text = orderNumber.value;
+  if (text === "--") return;
+
   navigator.clipboard
-    .writeText(orderNumber.value)
+    .writeText(text)
     .then(() => {
       showToast(t("rentingOrder.copySuccess"));
     })
@@ -233,12 +303,16 @@ const contactService = () => {
   showToast(t("rentingOrder.contactServiceToast"));
 };
 
-onMounted(() => {
-  // 启动计时器
-  updateDuration();
-  durationTimer = window.setInterval(() => {
+onMounted(async () => {
+  await fetchOrderDetail();
+
+  // 启动计时器，每分钟更新一次时长
+  if (orderData.value?.startTime) {
     updateDuration();
-  }, 60000); // 每分钟更新一次
+    durationTimer = window.setInterval(() => {
+      updateDuration();
+    }, 60000); // 每分钟更新一次
+  }
 });
 
 onUnmounted(() => {
@@ -312,12 +386,12 @@ onUnmounted(() => {
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 0;
+  margin-bottom: 5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   display: flex;
   gap: 40px;
   position: relative;
-}
+  }
 
 .duration-item {
   flex: 1;

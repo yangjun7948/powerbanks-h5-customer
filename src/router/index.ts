@@ -104,6 +104,16 @@ const routes: Array<RouteRecordRaw> = [
       noAuth: true,
     },
   },
+  {
+    path: "/qr-result",
+    name: "QRResult",
+    component: () => import("@/pages/QRResult.vue"),
+    meta: {
+      title: "routes.qrResult",
+      keepAlive: false,
+      noAuth: false,
+    },
+  },
 ];
 
 const router = createRouter({

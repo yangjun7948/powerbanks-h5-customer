@@ -9,13 +9,21 @@
 
     <!-- 内容区域 -->
     <div class="content">
+      <!-- 加载中 -->
+      <div v-if="loading" class="loading-container">
+        <van-loading type="spinner" color="#10b981" size="48" vertical>
+          {{ t("deposit.loading") }}
+        </van-loading>
+      </div>
+
       <!-- 门店信息 -->
-      <div class="info-card">
+      <div v-else class="info-card">
         <div class="info-item">
           <van-icon name="location-o" color="#10b981" size="20" />
           <div class="info-text">
             <div class="info-label">{{ t("deposit.storeName") }}</div>
-            <div class="info-value">{{ storeInfo.name }}</div>
+            <div class="info-value">{{ storeInfo.name || storeInfo.storeName || "-" }}</div>
+            <div v-if="storeInfo.address" class="info-address">{{ storeInfo.address }}</div>
           </div>
         </div>
 
@@ -28,84 +36,49 @@
         </div>
 
         <!-- 价格信息 -->
-        <div class="info-item price-info">
+        <div class="info-item price-info" v-if="pricingRule">
           <van-icon name="gold-coin-o" color="#10b981" size="20" />
           <div class="info-text">
-            <div class="price-title">{{ t("deposit.priceTitle") }}</div>
-            <div class="price-desc">{{ t("deposit.priceDesc") }}</div>
+            <div class="price-title">{{ formatPriceTitle() }}</div>
+            <div class="price-desc">{{ formatPriceDesc() }}</div>
           </div>
         </div>
       </div>
 
       <!-- 支付方式选择 -->
-      <div class="payment-section">
+      <!-- <div v-if="false" class="payment-section">
         <div class="section-title">{{ t("deposit.selectPayment") }}</div>
         <div class="payment-methods">
-          <div
-            v-for="method in paymentMethods"
-            :key="method.id"
-            class="payment-item"
-            :class="{ active: selectedPayment === method.id }"
-            @click="selectPayment(method.id)"
-          >
+          <div v-for="method in paymentMethods" :key="method.id" class="payment-item" :class="{ active: selectedPayment === method.id }" @click="selectPayment(method.id)">
             <img :src="method.icon" :alt="method.name" class="payment-icon" />
-            <van-icon
-              v-if="selectedPayment === method.id"
-              name="success"
-              color="#10b981"
-              class="check-icon"
-            />
+            <van-icon v-if="selectedPayment === method.id" name="success" color="#10b981" class="check-icon" />
           </div>
-        </div>
+        </div> -->
 
-        <!-- 支付信息输入区域 -->
-        <div
-          v-if="selectedPayment && needsPhoneInput"
-          class="payment-input-section"
-        >
+      <!-- 支付信息输入区域 -->
+      <!-- <div v-if="selectedPayment && needsPhoneInput" class="payment-input-section">
           <div class="input-label">{{ t("deposit.phoneNumber") }}</div>
-          <van-field
-            v-model="paymentPhone"
-            type="tel"
-            :placeholder="t('deposit.enterPhoneNumber')"
-            class="phone-input"
-            :border="false"
-            maxlength="10"
-          />
-        </div>
+          <van-field v-model="paymentPhone" type="tel" :placeholder="t('deposit.enterPhoneNumber')" class="phone-input" :border="false" maxlength="10" />
+        </div> -->
 
-        <!-- Orange 支付信息 -->
-        <div v-if="selectedPayment === 'orange'" class="orange-payment-info">
+      <!-- Orange 支付信息 -->
+      <!-- <div v-if="selectedPayment === 'orange'" class="orange-payment-info">
           <div class="input-label">{{ t("deposit.paymentPhone") }}</div>
-          <van-field
-            v-model="orangePhone"
-            type="tel"
-            :placeholder="t('deposit.enterPhoneNumber')"
-            class="phone-input"
-            :border="false"
-            maxlength="10"
-          />
+          <van-field v-model="orangePhone" type="tel" :placeholder="t('deposit.enterPhoneNumber')" class="phone-input" :border="false" maxlength="10" />
 
           <div class="input-label" style="margin-top: 16px">
             {{ t("deposit.authCode") }}
           </div>
-          <van-field
-            v-model="orangeAuthCode"
-            type="text"
-            :placeholder="t('deposit.enterAuthCode')"
-            class="phone-input"
-            :border="false"
-            maxlength="4"
-          />
+          <van-field v-model="orangeAuthCode" type="text" :placeholder="t('deposit.enterAuthCode')" class="phone-input" :border="false" maxlength="4" />
 
           <div class="orange-tip">
             {{ t("deposit.orangeTip") }}
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- 押金说明 -->
-      <div class="deposit-info">
+      <div v-if="!loading" class="deposit-info">
         <div class="deposit-amount">
           {{
             t("deposit.depositRequired", {
@@ -117,67 +90,72 @@
       </div>
 
       <!-- 支付按钮 -->
-      <van-button
-        type="primary"
-        block
-        round
-        class="pay-button"
-        :loading="paying"
-        @click="handlePay"
-      >
+      <van-button v-if="!loading" type="primary" block round class="pay-button" :loading="paying" @click="createDepositOrder">
         {{ t("deposit.payButton") }}
       </van-button>
 
       <!-- 退款说明 -->
-      <div class="refund-notice">{{ t("deposit.refundNotice") }}</div>
+      <div v-if="!loading" class="refund-notice">{{ t("deposit.refundNotice") }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { showToast, showDialog } from "vant";
-import waveIcon from "@/assets/pay/wave.webp";
-import momoIcon from "@/assets/pay/momo.webp";
-import orangeIcon from "@/assets/pay/orange.png";
-import moovIcon from "@/assets/pay/moov.png";
-
+import { getStoreDetailBySn } from "@/api/store";
+import { createDeposit, payDeposit } from "@/api/deposit";
+// import waveIcon from "@/assets/pay/wave.webp";
+// import momoIcon from "@/assets/pay/momo.webp";
+// import orangeIcon from "@/assets/pay/orange.png";
+// import moovIcon from "@/assets/pay/moov.png";
+import { useUserStore } from "@/store/modules/user";
+const userStore = useUserStore();
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
+
+// 路由参数
+const sn = ref<string>("");
+const storeId = ref<string>("");
 
 // 门店信息
-const storeInfo = ref({
-  id: "1",
-  name: "门店地址门店地址门店地址",
-  address: "香港特别行政区黄大仙区龙翔道120号",
+const storeInfo = ref<any>({
+  id: "",
+  name: "",
+  address: "",
 });
 
-// 押金金额
-const depositAmount = ref(5000);
+// 计费规则
+const pricingRule = ref<any>(null);
+
+// 押金金额从参数传递）
+const depositAmount = ref(0);
+const loading = ref(false);
 
 // 支付方式
 const paymentMethods = ref([
   {
     id: "wave",
     name: "Wave",
-    icon: waveIcon,
+    // icon: waveIcon,
   },
   {
     id: "momo",
     name: "MoMo",
-    icon: momoIcon,
+    // icon: momoIcon,
   },
   {
     id: "orange",
     name: "Orange Money",
-    icon: orangeIcon,
+    // icon: orangeIcon,
   },
   {
     id: "moov",
     name: "Moov Africa",
-    icon: moovIcon,
+    // icon: moovIcon,
   },
 ]);
 
@@ -202,73 +180,132 @@ const selectPayment = (id: string) => {
   orangeAuthCode.value = "";
 };
 
-// 处理支付
-const handlePay = async () => {
-  if (!selectedPayment.value) {
-    showToast(t("deposit.selectPaymentFirst"));
+// 格式化价格标题
+const formatPriceTitle = () => {
+  if (!pricingRule.value) {
+    return t("deposit.priceTitle");
+  }
+
+  const rule = pricingRule.value;
+  const pricePerHour = rule.pricePerHour || 0;
+  const freeMinutes = rule.freeMinutes || 0;
+
+  if (freeMinutes > 0) {
+    return t("deposit.priceTitleTemplate", {
+      price: pricePerHour,
+      freeMinutes: freeMinutes,
+    });
+  }
+  return t("deposit.priceTitleNoFree", {
+    price: pricePerHour,
+  });
+};
+
+// 格式化价格说明
+const formatPriceDesc = () => {
+  if (!pricingRule.value) {
+    return t("deposit.priceDesc");
+  }
+
+  const rule = pricingRule.value;
+  const freeMinutes = rule.freeMinutes || 0;
+  const pricePerHour = rule.pricePerHour || 0;
+  const maxPricePerDay = rule.maxPricePerDay || 0;
+
+  let desc = "";
+
+  if (freeMinutes > 0) {
+    desc = t("deposit.priceDescTemplate", {
+      freeMinutes: freeMinutes,
+      pricePerHour: pricePerHour,
+    });
+  } else {
+    desc = t("deposit.priceDescNoFree", {
+      pricePerHour: pricePerHour,
+    });
+  }
+
+  if (maxPricePerDay > 0) {
+    desc += t("deposit.maxPricePerDay", {
+      maxPrice: maxPricePerDay,
+    });
+  }
+
+  return desc;
+};
+
+// 获取门店信息
+const fetchStoreInfo = async () => {
+  if (!sn.value) {
+    showToast(t("deposit.snRequired"));
+    router.back();
     return;
   }
 
-  // 验证手机号（MoMo/Moov）
-  if (needsPhoneInput.value && !paymentPhone.value) {
-    showToast(t("deposit.phoneRequired"));
-    return;
-  }
+  loading.value = true;
+  try {
+    const res: any = await getStoreDetailBySn(sn.value);
+    // 根据 API 返回的数据结构设置门店信息
+    const data = res?.data || res || {};
+    storeInfo.value = data;
 
-  if (needsPhoneInput.value && paymentPhone.value.length < 10) {
-    showToast(t("deposit.phoneInvalid"));
-    return;
+    // 获取计费规则
+    if (data.pricingRule) {
+      pricingRule.value = data.pricingRule;
+    }
+  } catch (error: any) {
+    showToast(t("deposit.loadStoreFailed"));
+    router.push("/");
+  } finally {
+    loading.value = false;
   }
-
-  // 验证Orange支付信息
-  if (selectedPayment.value === "orange") {
-    if (!orangePhone.value) {
-      showToast(t("deposit.phoneRequired"));
-      return;
-    }
-    if (orangePhone.value.length < 10) {
-      showToast(t("deposit.phoneInvalid"));
-      return;
-    }
-    if (!orangeAuthCode.value) {
-      showToast(t("deposit.authCodeRequired"));
-      return;
-    }
-    if (orangeAuthCode.value.length < 4) {
-      showToast(t("deposit.authCodeInvalid"));
-      return;
-    }
+};
+const createDepositOrder = async () => {
+  if (paying.value) {
+    return; // 防止重复点击
   }
 
   paying.value = true;
 
   try {
-    // 模拟支付过程
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // 实际应该调用支付API
-    // const res = await payDeposit({
-    //   storeId: storeInfo.value.id,
-    //   amount: depositAmount.value,
-    //   paymentMethod: selectedPayment.value,
-    //   phone: paymentPhone.value || orangePhone.value,
-    //   authCode: orangeAuthCode.value
-    // });
-
-    showDialog({
-      title: t("common.success"),
-      message: t("deposit.paySuccess"),
-      confirmButtonColor: "#10b981",
-    }).then(() => {
-      // 跳转到充电宝弹出页面
-      router.push("/popping");
+    // 创建押金订单
+    const res: any = await createDeposit({
+      userId: userStore.userInfo.userId,
+      amount: depositAmount.value,
     });
-  } catch (error) {
-    showToast(t("deposit.payFailed"));
-  } finally {
+
+    // 获取返回的支付信息
+    const paymentData = res?.data || res;
+    const paymentUrl = paymentData?.paymentUrl;
+
+    if (paymentUrl) {
+      // 跳转到支付页面
+      window.location.href = paymentUrl;
+    } else {
+      // 如果没有 paymentUrl，显示错误提示
+      showToast(t("deposit.paymentUrlMissing"));
+      paying.value = false;
+    }
+  } catch (error: any) {
+    console.error("创建订单失败:", error);
+    showToast(error?.message || t("deposit.createOrderFailed"));
     paying.value = false;
   }
 };
+
+// 初始化
+onMounted(() => {
+  // 从路由参数中获取 sn 和 storeId
+  sn.value = (route.query.sn as string) || "";
+  depositAmount.value = Number(route.query.amount) || 0;
+  //根据设备ID，获取当前设备所在的门店信息
+  if (sn.value) {
+    fetchStoreInfo();
+  } else {
+    showToast(t("deposit.storeIdRequired"));
+    router.push("/");
+  }
+});
 </script>
 
 <style scoped>
@@ -334,6 +371,13 @@ const handlePay = async () => {
   font-size: 15px;
   color: #333;
   font-weight: 500;
+}
+
+.info-address {
+  font-size: 13px;
+  color: #999;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
 .price-info {
@@ -500,5 +544,14 @@ const handlePay = async () => {
   color: #f59e0b;
   line-height: 1.5;
   margin-top: 12px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
 }
 </style>

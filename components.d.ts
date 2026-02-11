@@ -7,11 +7,13 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    BottomNav: typeof import('./src/components/common/BottomNav/index.vue')['default']
     Button: typeof import('./src/components/common/HoverButton/Button.vue')['default']
     HoverButton: typeof import('./src/components/common/HoverButton/index.vue')['default']
     NaiveProvider: typeof import('./src/components/common/NaiveProvider/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    VanActionSheet: typeof import('vant/es')['ActionSheet']
     VanButton: typeof import('vant/es')['Button']
     VanEmpty: typeof import('vant/es')['Empty']
     VanField: typeof import('vant/es')['Field']

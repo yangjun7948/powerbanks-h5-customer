@@ -18,7 +18,7 @@ export const useUserStore = defineStore("user", {
     async phoneLogin(
       phone: string,
       code: string,
-    ) {
+    ) {      
       const data = await loginByPhone({
         username: phone,
         phoneCode: code

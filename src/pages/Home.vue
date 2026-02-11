@@ -43,22 +43,7 @@
     </div>
 
     <!-- 底部导航 -->
-    <div class="bottom-nav">
-      <div class="nav-item" :class="{ active: currentRoute === 'orders' }" @click="goToOrders">
-        <van-icon name="orders-o" size="24" />
-        <span>{{ t("store.orders") }}</span>
-      </div>
-      <div class="nav-item nav-center" @click="handleScanToRent">
-        <div class="scan-button" :class="{ 'renting-button': hasRentingOrder }">
-          <van-icon :name="hasRentingOrder ? 'clock-o' : 'scan'" size="28" color="#fff" />
-        </div>
-        <span class="scan-text">{{ hasRentingOrder ? t("store.renting") : t("store.scanToRent") }}</span>
-      </div>
-      <div class="nav-item" :class="{ active: currentRoute === 'mine' }" @click="goToMine">
-        <van-icon name="user-o" size="24" />
-        <span>{{ t("store.mine") }}</span>
-      </div>
-    </div>
+    <BottomNav />
   </div>
 </template>
 
@@ -68,8 +53,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { showToast } from "vant";
 import { getStoreList } from "@/api/store";
-import { getRentingOrder } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
+import { BottomNav } from "@/components/common";
 
 const userStore = useUserStore();
 const { t } = useI18n();
@@ -77,7 +62,6 @@ const router = useRouter();
 
 // 状态
 const activeTab = ref("returnable"); // 默认选中"可归还"
-const currentRoute = ref("home"); // 当前路由标识
 const storeList = ref<any[]>([]);
 const loading = ref(false);
 const finished = ref(false);
@@ -86,8 +70,6 @@ const pageSize = 10;
 const latitude = ref<number | null>(null);
 const longitude = ref<number | null>(null);
 const locationError = ref<string | null>(null);
-const hasRentingOrder = ref(false);
-const rentingOrderId = ref<string | null>(null);
 
 // 模拟数据（实际应该从API获取）
 const mockStores = [
@@ -249,47 +231,6 @@ const goToStoreDetail = (id: string) => {
   }
 };
 
-// 扫码租借
-const handleScanToRent = () => {
-  // 如果有进行中的订单，跳转到订单详情
-  if (hasRentingOrder.value && rentingOrderId.value) {
-    router.push(`/renting-order?id=${rentingOrderId.value}`);
-    return;
-  }
-  // 否则跳转到扫码页面
-  router.push("/qr-scanner");
-};
-
-// 查询进行中的订单
-const checkRentingOrder = async () => {
-  try {
-    const res: any = await getRentingOrder(userStore.userInfo.userId);
-    // 根据 API 返回的数据结构判断是否有进行中的订单
-    if (res?.data?.id || res?.id) {
-      hasRentingOrder.value = true;
-      rentingOrderId.value = res?.data?.id || res?.id;
-    } else {
-      hasRentingOrder.value = false;
-      rentingOrderId.value = null;
-    }
-  } catch (error) {
-    // 查询失败，默认没有进行中的订单
-    console.warn("查询进行中订单失败:", error);
-    hasRentingOrder.value = false;
-    rentingOrderId.value = null;
-  }
-};
-
-// 跳转到订单列表
-const goToOrders = () => {
-  router.push("/order-list");
-};
-
-// 跳转到个人中心
-const goToMine = () => {
-  router.push("/mine");
-};
-
 // 是否正在等待定位
 const isWaitingForLocation = ref(false);
 
@@ -339,9 +280,6 @@ const getFirstImage = (images: string | string[] | any[]) => {
 };
 // 初始化
 onMounted(() => {
-  // 查询进行中的订单
-  checkRentingOrder();
-  
   // 先立即加载一次数据（不等待定位），避免页面一直loading
   onLoad();
 
@@ -511,74 +449,4 @@ onMounted(() => {
   color: #ccc;
 }
 
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: #666;
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.nav-item.active {
-  color: #10b981;
-}
-
-.nav-item:active {
-  opacity: 0.7;
-}
-
-.nav-center {
-  position: relative;
-  top: -10px;
-}
-
-.scan-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-  transition: all 0.3s ease;
-}
-
-.scan-button.renting-button {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-}
-
-.scan-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
-}
-
-.scan-button.renting-button:active {
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-}
-
-.scan-text {
-  margin-top: 4px;
-  color: #333;
-  font-weight: 500;
-}
 </style>
