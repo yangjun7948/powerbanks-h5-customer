@@ -10,6 +10,7 @@
     <!-- 内容 -->
     <div class="terms-body">
       <h1 class="terms-main-title">CONDITIONS GÉNÉRALES D'UTILISATION (CGU)</h1>
+      <h1 class="terms-main-title">ET POLITIQUE DE CONFIDENTIALITÉ</h1>
       <h2 class="terms-brand">ALLO CHARGE</h2>
 
       <p class="terms-intro">
@@ -114,13 +115,63 @@
         </p>
       </div>
 
-      <div class="terms-section">
-        <div class="terms-section-title">ARTICLE 7 : DONNÉES PERSONNELLES</div>
-        <p class="terms-section-body">
-          Nous collectons et traitons vos données personnelles (numéro de téléphone, historique de location) dans le
-          strict respect de la législation en vigueur en Côte d'Ivoire, uniquement dans le but de fournir et d'améliorer
-          notre service.
-        </p>
+      <div class="terms-section terms-section--privacy">
+        <div class="terms-section-title">
+          ARTICLE 7 : POLITIQUE DE CONFIDENTIALITÉ ET PROTECTION DES DONNÉES PERSONNELLES
+        </div>
+        <div class="terms-clause">
+          <span class="terms-clause-num">7.1.</span>
+          <span>
+            <strong>Cadre Légal :</strong> Conformément à la Loi n° 2013-450 du 19 juin 2013 relative à la protection
+            des données à caractère personnel en République de Côte d'Ivoire, INSTAPRINT s'engage à protéger la vie
+            privée de l'Utilisateur.
+          </span>
+        </div>
+        <div class="terms-clause">
+          <span class="terms-clause-num">7.2.</span>
+          <span>
+            <strong>Données collectées :</strong> Dans le cadre de l'utilisation du service Allo Charge, nous collectons
+            de manière loyale et licite les données suivantes :
+            <ul class="terms-list">
+              <li>numéro de téléphone</li>
+              <li>identifiants de transaction (liés aux paiements via les opérateurs de Mobile Money)</li>
+              <li>historique des locations</li>
+              <li>données de géolocalisation (uniquement pour localiser les cabinets à proximité)</li>
+            </ul>
+          </span>
+        </div>
+        <div class="terms-clause">
+          <span class="terms-clause-num">7.3.</span>
+          <span>
+            <strong>Finalité du traitement :</strong> Ces données sont strictement nécessaires et utilisées
+            exclusivement pour :
+            <ul class="terms-list">
+              <li>la création et la gestion du compte</li>
+              <li>le traitement des paiements et des cautions</li>
+              <li>l'assistance client</li>
+              <li>l'amélioration de la qualité de notre service</li>
+            </ul>
+            L'Entreprise s'interdit de vendre ou de céder ces données à des tiers à des fins de prospection
+            commerciale.
+          </span>
+        </div>
+        <div class="terms-clause">
+          <span class="terms-clause-num">7.4.</span>
+          <span>
+            <strong>Sécurité :</strong> L'Entreprise met en œuvre toutes les mesures techniques et organisationnelles
+            appropriées pour garantir la sécurité et la confidentialité des données personnelles collectées.
+          </span>
+        </div>
+        <div class="terms-clause">
+          <span class="terms-clause-num">7.5.</span>
+          <span>
+            <strong>Droits de l'Utilisateur :</strong> Conformément à la loi ivoirienne, l'Utilisateur dispose d'un
+            droit d'accès, de rectification, de mise à jour et de suppression de ses données personnelles. Pour exercer
+            ces droits, l'Utilisateur peut contacter notre Service Client via WhatsApp au
+            <a class="terms-contact" href="https://wa.me/2250701478515">0701478515</a>
+            ou depuis la plateforme.
+          </span>
+        </div>
       </div>
 
       <div class="terms-section">
@@ -254,6 +305,27 @@ const { t } = useI18n();
   color: #10b981;
   flex-shrink: 0;
   min-width: 28px;
+}
+
+.terms-section--privacy {
+  border-left: 3px solid #10b981;
+}
+
+.terms-list {
+  margin: 6px 0 8px 0;
+  padding-left: 16px;
+  color: #555;
+}
+
+.terms-list li {
+  margin-bottom: 4px;
+  line-height: 1.7;
+}
+
+.terms-contact {
+  color: #10b981;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .terms-footer {

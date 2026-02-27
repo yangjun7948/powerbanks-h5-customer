@@ -22,7 +22,7 @@ export const lang = {
     qrScanner: "Scanner le Code QR",
     storeDetail: "Détails du Magasin",
     qrResult: "Résultat du scan",
-    terms: "Conditions Générales d'Utilisation",
+    terms: "CGU & Politique de Confidentialité",
     needLogin: "Connectez-vous pour continuer l'utilisation",
     goLogin: "S'inscrire",
     thinkAgain: "Plus tard",

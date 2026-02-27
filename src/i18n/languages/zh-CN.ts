@@ -22,7 +22,7 @@ export const lang = {
     qrScanner: "扫码租借",
     storeDetail: "门店详情",
     qrResult: "扫码结果",
-    terms: "用户协议",
+    terms: "用户协议与隐私政策",
     needLogin: "您需要注册账号才能继续使用",
     goLogin: "去注册",
     thinkAgain: "再想想",
