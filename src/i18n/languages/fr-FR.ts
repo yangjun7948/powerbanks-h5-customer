@@ -255,6 +255,7 @@ export const lang = {
     manualInputMessage:"Entrez le numéro affiché sur la borne",
     featureComingSoon: "Bientôt disponible",
     depositStatusError: "Erreur vérification caution. Veuillez réessayer.",
+    invalidUrl: "QR code non valide ou non autorisé",
   },
   storeDetail: {
     title: "Détails de la station",

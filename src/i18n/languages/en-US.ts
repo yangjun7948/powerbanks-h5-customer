@@ -260,6 +260,7 @@ export const lang = {
       "Please enter the device number on the power bank cabinet",
     featureComingSoon: "Feature coming soon",
     depositStatusError: "Failed to query deposit status, please try again",
+    invalidUrl: "Invalid QR code or unauthorized URL",
   },
   storeDetail: {
     title: "Store Detail",

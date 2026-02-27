@@ -121,35 +121,29 @@ const handleScanResult = async (qrCode: string) => {
   // 暂停扫描
   showScanner.value = false;
 
-  // 这里根据二维码内容进行相应的处理
-  // 例如：跳转到押金页面、显示设备信息等
   try {
-    await showDialog({
-      title: t("scanner.scanSuccess"),
-      message: `${t("scanner.qrCodeContent")}: ${qrCode}`,
-      confirmButtonText: t("common.confirm"),
-      confirmButtonColor: "#10b981",
-    });
-
-    // todo 先调用接口判断押金够不够
-    const res = await getDepositStatus(qrCode);
-    if (res.data.depositStatus === "PAID") {
-      router.push({
-        path: "/popping",
-        query: { qrCode },
-      });
-    } else if (res.data.depositStatus === "UNPAID") {
-      router.push({
-        path: "/deposit",
-        query: { qrCode },
-      });
-    } else {
-      showToast(t("scanner.depositStatusError"));
+    // 尝试解析为 URL
+    let url: URL;
+    try {
+      url = new URL(qrCode);
+    } catch {
+      // 无法解析为合法 URL
+      showToast({ message: t("scanner.invalidUrl"), position: "bottom" });
+      showScanner.value = true;
+      return;
     }
+
+    // 校验是否与当前站点同域
+    if (url.hostname !== window.location.hostname) {
+      showToast({ message: t("scanner.invalidUrl"), position: "bottom" });
+      showScanner.value = true;
+      return;
+    }
+
+    // 同域则跳转到对应路径（保留 search 和 hash）
+    router.push(url.pathname + url.search + url.hash);
   } catch (error) {
-    // 用户取消对话框或其他错误
     console.error("处理扫码结果失败:", error);
-    // 恢复扫描
     showScanner.value = true;
   }
 };

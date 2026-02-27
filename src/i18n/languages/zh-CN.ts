@@ -255,6 +255,7 @@ export const lang = {
     manualInputMessage: "请输入充电宝机柜上的设备编号",
     featureComingSoon: "功能开发中",
     depositStatusError: "查询押金状态失败，请重试",
+    invalidUrl: "二维码无效或非本站链接",
   },
   storeDetail: {
     title: "门店详情",
