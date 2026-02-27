@@ -114,6 +114,16 @@ const routes: Array<RouteRecordRaw> = [
       noAuth: false,
     },
   },
+  {
+    path: "/terms",
+    name: "Terms",
+    component: () => import("@/pages/Terms.vue"),
+    meta: {
+      title: "routes.terms",
+      keepAlive: false,
+      noAuth: true,
+    },
+  },
 ];
 
 const router = createRouter({

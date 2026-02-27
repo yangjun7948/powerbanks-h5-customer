@@ -21,7 +21,7 @@ function getBrowserLanguage(): string {
   }
 
   // 默认返回中文
-  return "zh-CN";
+  return "en-US";
 }
 
 export function getLocalLanguage() {
