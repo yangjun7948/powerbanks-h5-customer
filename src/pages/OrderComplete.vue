@@ -337,9 +337,9 @@ const handlePay = async () => {
     paying.value = true;
 
     try {
-      const orderId = route.query.id as string;
+      const orderId = Number(route.query.id);
       // 调用支付接口（这里使用默认支付方式，实际应该让用户选择）
-      const res: any = await payOrder(orderId, "wechat"); // 默认使用微信支付，实际应该让用户选择
+      const res: any = await payOrder(orderId, "paydunya"); // 默认使用微信支付，实际应该让用户选择
 
       const paymentData = res?.data || res;
       const paymentUrl = paymentData?.paymentUrl;

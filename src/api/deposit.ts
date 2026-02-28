@@ -35,11 +35,10 @@ export function payDeposit(data: {
 /**
  * 退还押金
  */
-export function refundDeposit(data: { orderId: string }) {
+export function refundDeposit() {
   return request({
-    url: "/payment/refund",
+    url: "/app/payment/refund/deposit",
     method: "post",
-    data,
   });
 }
 

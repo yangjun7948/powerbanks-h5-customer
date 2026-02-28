@@ -4,7 +4,7 @@ import { AnyCnameRecord } from "dns";
 /**
  * 获取进行中的订单
  */
-export function getRentingOrder(userId:string) {
+export function getRentingOrder(userId: string) {
   return request<any>({
     url: "/app/order/ongoing/" + userId,
     method: "get",
@@ -59,11 +59,12 @@ export function getOrderList(params: any) {
 /**
  * 支付订单
  */
-export function payOrder(orderId: string | number, paymentMethod: string) {
+export function payOrder(orderId: number, paymentMethod: string) {
   return request<any>({
-    url: `/app/order/pay/${orderId}`,
+    url: `/app/payment/rent/create`,
     method: "post",
-    data: {
+    params: {
+      orderId,
       paymentMethod,
     },
   });

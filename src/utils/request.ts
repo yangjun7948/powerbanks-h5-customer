@@ -25,6 +25,8 @@ service.interceptors.request.use(
     }
     //添加APPID
     config.headers["appId"] = "H5_20260203";
+    // 根据用户语言设置 Accept-Language
+    config.headers["Accept-Language"] = localStorage.getItem("IMI18n") || "fr-FR";
     // 是否需要设置 token
     const isToken = (config.headers || {}).isToken === false;
     // 是否需要防止数据重复提交
