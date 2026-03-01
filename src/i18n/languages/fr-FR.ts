@@ -23,6 +23,7 @@ export const lang = {
     storeDetail: "Détails du Magasin",
     qrResult: "Résultat du scan",
     terms: "CGU & Politique de Confidentialité",
+    paymentSuccess: "Vérification du paiement",
     needLogin: "Connectez-vous pour continuer l'utilisation",
     goLogin: "S'inscrire",
     thinkAgain: "Plus tard",
@@ -230,6 +231,8 @@ export const lang = {
     logoutMessage:
       "Vous devrez vous reconnecter pour accéder à vos locations et à votre portefeuille.",
     pleaseLoginFirst: "Veuillez vous connecter",
+    depositActive: "Actif – Location possible",
+    depositNone: "Aucune caution",
     featureComingSoon: "Bientôt disponible",
     scanFeature: "Ouvrir le scanner",
     contactSupport: "Contacter le support",
@@ -284,5 +287,16 @@ export const lang = {
     noDeviceCode: "Numéro de borne manquant",
     unknownStatus: "Statut de caution inconnu",
     checkFailed: "Échec de la vérification. Veuillez réessayer.",
+  },
+  paymentSuccess: {
+    verifying: "Vérification du paiement en cours...",
+    successTitle: "Paiement confirmé !",
+    successMessage: "Votre caution a bien été enregistrée. Votre Power Bank va être éjecté.",
+    redirecting: "Redirection dans {seconds} s...",
+    failedTitle: "Échec de la vérification",
+    failedMessage: "Impossible de confirmer votre paiement. Veuillez réessayer ou contacter le support.",
+    retry: "Réessayer",
+    backHome: "Retour à l'accueil",
+    noToken: "Lien de retour invalide.",
   },
 };

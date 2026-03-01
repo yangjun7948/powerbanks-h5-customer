@@ -51,3 +51,14 @@ export function getDepositStatus(userId:string) {
     method: "get",
   });
 }
+
+/**
+ * 验证 PayDunya 支付回调 token
+ */
+export function verifyDepositPayment(token: string) {
+  return request({
+    url: "/app/payment/verify/deposit",
+    method: "post",
+    params: { token },
+  });
+}

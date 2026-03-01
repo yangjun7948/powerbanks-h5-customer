@@ -124,6 +124,16 @@ const routes: Array<RouteRecordRaw> = [
       noAuth: true,
     },
   },
+  {
+    path: "/payment-success",
+    name: "PaymentSuccess",
+    component: () => import("@/pages/PaymentSuccess.vue"),
+    meta: {
+      title: "routes.paymentSuccess",
+      keepAlive: false,
+      noAuth: false,
+    },
+  },
 ];
 
 const router = createRouter({

@@ -279,7 +279,8 @@ const createDepositOrder = async () => {
     const paymentUrl = paymentData?.paymentUrl;
 
     if (paymentUrl) {
-      // 跳转到支付页面
+      // 跳转前将 sn 存入 sessionStorage，支付回调页面需要用它跳转到 popping
+      sessionStorage.setItem("deposit_sn", sn.value);
       window.location.href = paymentUrl;
     } else {
       // 如果没有 paymentUrl，显示错误提示

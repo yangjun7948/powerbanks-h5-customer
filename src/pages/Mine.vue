@@ -1,6 +1,6 @@
 <template>
   <div class="mine-container">
-    <!-- 顶部个人信息 -->
+    <!-- 顶部：用户信息 + 押金卡片 -->
     <div class="profile-header">
       <div class="user-info">
         <div class="avatar">
@@ -14,34 +14,42 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 我的钱包（仅押金） -->
-    <div class="wallet-section">
-      <div class="section-title">{{ t("mine.myWallet") }}</div>
-      <div class="wallet-card">
-        <div class="wallet-item">
-          <div class="wallet-value">¥{{ deposit }}</div>
-          <div class="wallet-label">{{ t("mine.deposit") }}</div>
+      <!-- 押金卡片 -->
+      <div class="deposit-card">
+        <!-- 左：金额 + 状态 -->
+        <div class="deposit-main">
+          <div class="deposit-label">{{ t("mine.deposit") }}</div>
+          <div class="deposit-amount">
+            <span class="deposit-number">{{ depositFormatted }}</span>
+            <span class="deposit-currency">FCFA</span>
+          </div>
+          <div class="deposit-status" :class="depositActive ? 'status--active' : 'status--inactive'">
+            <span class="status-dot" />
+            {{ depositActive ? t("mine.depositActive") : t("mine.depositNone") }}
+          </div>
         </div>
-        <van-button type="primary" size="small" round class="withdraw-btn" :loading="withdrawLoading" @click="handleWithdraw">
-          {{ t("mine.withdraw") }}
-        </van-button>
+
+        <!-- 右：操作按钮 -->
+        <div class="deposit-actions">
+          <button class="deposit-action-btn deposit-action-btn--primary" @click="goToOrders">
+            <van-icon name="orders-o" size="18" />
+            <span>{{ t("mine.myOrders") }}</span>
+          </button>
+          <button
+            class="deposit-action-btn deposit-action-btn--ghost"
+            :disabled="withdrawLoading || !depositActive"
+            @click="handleWithdraw"
+          >
+            <van-loading v-if="withdrawLoading" size="16" color="#10b981" />
+            <van-icon v-else name="refund-o" size="18" />
+            <span>{{ t("mine.withdraw") }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 菜单列表 -->
-    <div class="menu-section">
-      <div class="menu-item" @click="goToOrders">
-        <div class="menu-left">
-          <van-icon name="orders-o" size="20" color="#10b981" />
-          <span class="menu-text">{{ t("mine.myOrders") }}</span>
-        </div>
-        <van-icon name="arrow" color="#ccc" />
-      </div>
-    </div>
-
-    <!-- 设置菜单 -->
+    <!-- 菜单 -->
     <div class="menu-section">
       <div class="menu-item" @click="goToLanguage">
         <div class="menu-left">
@@ -181,13 +189,20 @@ const userId = computed(() => {
   return userStore.userInfo?.userId || "";
 });
 
-// 仅显示押金（没有余额）
+// 押金数值
 const deposit = computed(() => {
   const info = userStore.userInfo || {};
   const raw = info.depositAmount ?? info.deposit ?? 0;
-  const num = typeof raw === "string" ? parseFloat(raw) : Number(raw || 0);
-  return num.toFixed(2);
+  return typeof raw === "string" ? parseFloat(raw) : Number(raw || 0);
 });
+
+// 押金是否有效（> 0）
+const depositActive = computed(() => deposit.value > 0);
+
+// 格式化显示（FCFA 一般无小数，整数展示）
+const depositFormatted = computed(() =>
+  deposit.value.toLocaleString("fr-FR", { maximumFractionDigits: 0 })
+);
 
 // 当前语言名称
 const currentLanguageName = computed(() => {
@@ -243,8 +258,7 @@ const handleWithdraw = () => {
     showToast(t("mine.pleaseLoginFirst"));
     return;
   }
-  const depositVal = parseFloat(deposit.value);
-  if (depositVal <= 0) {
+  if (deposit.value <= 0) {
     showToast(t("mine.noDepositToWithdraw"));
     return;
   }
@@ -317,7 +331,7 @@ onMounted(async () => {
 
 .profile-header {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  padding: 24px 16px;
+  padding: 24px 16px 36px;
   padding-top: calc(24px + env(safe-area-inset-top));
 }
 
@@ -361,68 +375,122 @@ onMounted(async () => {
   text-decoration: underline;
 }
 
-.wallet-section {
-  margin: -24px 16px 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 12px;
-  opacity: 0.9;
-}
-
-.wallet-card {
+/* ── 押金卡片 ── */
+.deposit-card {
+  margin-top: 20px;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: relative;
+  gap: 12px;
 }
 
-.wallet-item {
+.deposit-main {
   flex: 1;
-  text-align: center;
+  min-width: 0;
 }
 
-.wallet-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 6px;
-}
-
-.wallet-label {
-  font-size: 13px;
+.deposit-label {
+  font-size: 12px;
   color: #999;
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
 }
 
-.wallet-divider {
-  width: 1px;
-  height: 40px;
-  background: #e5e5e5;
+.deposit-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
-.withdraw-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  height: 32px;
-  padding: 0 16px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
+.deposit-number {
+  font-size: 30px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.deposit-currency {
   font-size: 13px;
+  font-weight: 600;
+  color: #888;
+}
+
+.deposit-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.status--active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status--inactive {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.deposit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.deposit-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.deposit-action-btn:active {
+  opacity: 0.75;
+}
+
+.deposit-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.deposit-action-btn--primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+}
+
+.deposit-action-btn--ghost {
+  background: transparent;
+  color: #10b981;
+  border: 1.5px solid #10b981;
 }
 
 .menu-section {
   background: #fff;
-  margin: 0 16px 16px;
+  margin: 10px 16px 16px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
