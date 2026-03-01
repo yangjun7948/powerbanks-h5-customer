@@ -87,6 +87,7 @@
           }}
         </div>
         <div class="deposit-refund">{{ t("deposit.refundable") }}</div>
+        <div class="deposit-fee-tip">{{ t("deposit.feeNotice") }}</div>
       </div>
 
       <!-- 支付按钮 -->
@@ -483,6 +484,12 @@ onMounted(() => {
 .deposit-refund {
   font-size: 14px;
   color: #999;
+}
+
+.deposit-fee-tip {
+  font-size: 12px;
+  color: #b0b0b0;
+  margin-top: 6px;
 }
 
 .pay-button {

@@ -90,6 +90,7 @@ export const lang = {
     selectPayment: "Select Payment Method:",
     depositRequired: "Deposit of {amount} FCFA required",
     refundable: "(Refundable anytime)",
+    feeNotice: "A 1% processing fee will be charged when you pay.",
     payButton: "Pay Deposit",
     refundNotice:
       "After returning the power bank\nYou can withdraw the deposit in Personal Center - My Wallet",
@@ -242,7 +243,7 @@ export const lang = {
     logoutSuccess: "Logged out",
     noDepositToWithdraw: "No deposit to refund",
     withdrawConfirmTitle: "Refund deposit?",
-    withdrawConfirmMessage: "Warning: after refund, you will no longer be able to rent a Power Bank without paying a new deposit.",
+    withdrawConfirmMessage: "A 1% processing fee will be deducted from the refund. After refund, you will no longer be able to rent a Power Bank without paying a new deposit.",
     withdrawConfirmBtn: "Confirm refund",
     withdrawSuccess: "Deposit refund successful",
   },

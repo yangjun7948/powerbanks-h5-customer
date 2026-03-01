@@ -88,6 +88,7 @@ export const lang = {
     selectPayment: "Moyen de paiement :",
     depositRequired: "Caution requise : {amount} FCFA",
     refundable: "(Remboursable à tout moment)",
+    feeNotice: "Des frais de 1 % seront prélevés lors du paiement.",
     payButton: "Payer la caution",
     refundNotice:
       "Après le retour, récupérez votre caution dans Profil > Mon Portefeuille.",
@@ -241,7 +242,7 @@ export const lang = {
     logoutSuccess: "Déconnexion réussie",
     noDepositToWithdraw: "Aucune caution à rembourser",
     withdrawConfirmTitle: "Rembourser la caution ?",
-    withdrawConfirmMessage: "Attention : après le remboursement, vous ne pourrez plus louer de Power Bank sans payer une nouvelle caution.",
+    withdrawConfirmMessage: "Attention : des frais de 1 % seront déduits du montant remboursé. Après le remboursement, vous ne pourrez plus louer de Power Bank sans payer une nouvelle caution.",
     withdrawConfirmBtn: "Confirmer le remboursement",
     withdrawSuccess: "Remboursement effectué avec succès",
   },
