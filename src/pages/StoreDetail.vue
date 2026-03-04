@@ -69,12 +69,15 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { showToast } from "vant";
+import { showToast, showDialog } from "vant";
 import { getStoreDetail } from "@/api/store";
+import { getRentingOrder } from "@/api/order";
+import { useUserStore } from "@/store/modules/user";
 
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
 
 // 状态
 const storeInfo = ref<any>(null);
@@ -380,13 +383,62 @@ const openNavigation = async () => {
 };
 
 // 租借处理
-const handleRent = () => {
+const handleRent = async () => {
   if (!storeInfo.value?.canRent) {
     showToast(t("storeDetail.cannotRent"));
     return;
   }
-  // 跳转到押金页面或扫码页面
-  router.push("/qr-scanner");
+
+  // 检查是否存在进行中的订单
+  let blockRent = false;
+  try {
+    const res: any = await getRentingOrder(userStore.userInfo?.userId);
+    const hasOngoing = res?.hasOngoingOrder;
+    if (hasOngoing) {
+      const order = res?.order;
+      const status = order?.status;
+      const paymentStatus = order?.paymentStatus;
+      const orderId = order?.id;
+
+      if (status === 1) {
+        blockRent = true;
+        try {
+          await showDialog({
+            title: t("storeDetail.hasRentingOrder"),
+            message: t("storeDetail.hasRentingOrderMsg"),
+            confirmButtonText: t("storeDetail.viewRentingOrder"),
+            cancelButtonText: t("common.cancel"),
+            showCancelButton: true,
+          });
+          router.push({ path: "/renting-order", query: { id: String(orderId) } });
+        } catch {
+          // 用户点取消，不跳转
+        }
+        return;
+      } else if (paymentStatus === 0) {
+        blockRent = true;
+        try {
+          await showDialog({
+            title: t("storeDetail.hasUnpaidOrder"),
+            message: t("storeDetail.hasUnpaidOrderMsg"),
+            confirmButtonText: t("storeDetail.viewUnpaidOrder"),
+            cancelButtonText: t("common.cancel"),
+            showCancelButton: true,
+          });
+          router.push({ path: "/order-complete", query: { id: String(orderId) } });
+        } catch {
+          // 用户点取消，不跳转
+        }
+        return;
+      }
+    }
+  } catch {
+    // API 检查失败时不阻断用户，允许继续发起租借
+  }
+
+  if (!blockRent) {
+    router.push("/qr-scanner");
+  }
 };
 
 // 组件挂载

@@ -59,6 +59,7 @@ type Status = "verifying" | "success" | "failed" | "no-token";
 const status = ref<Status>("verifying");
 const countdown = ref(3);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let redirectFn: () => void = () => {};
 
 const goToPopping = () => {
   const sn = sessionStorage.getItem("deposit_sn") || "";
@@ -66,12 +67,16 @@ const goToPopping = () => {
   router.replace({ path: "/popping", query: sn ? { sn } : {} });
 };
 
+const goToOrderDetail = (orderId: string | number) => {
+  router.replace({ path: "/order-complete", query: { id: String(orderId) } });
+};
+
 const startCountdown = () => {
   countdownTimer = setInterval(() => {
     countdown.value--;
     if (countdown.value <= 0) {
       clearInterval(countdownTimer!);
-      goToPopping();
+      redirectFn();
     }
   }, 1000);
 };
@@ -85,7 +90,13 @@ const verify = async () => {
 
   status.value = "verifying";
   try {
-    await verifyDepositPayment(token);
+    const res = await verifyDepositPayment(token);
+    const { type, orderId } = res.data ?? {};
+    if (type === "rent" && orderId) {
+      redirectFn = () => goToOrderDetail(orderId);
+    } else {
+      redirectFn = goToPopping;
+    }
     status.value = "success";
     startCountdown();
   } catch {

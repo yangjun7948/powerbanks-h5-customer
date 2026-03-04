@@ -135,7 +135,7 @@ const createOrder = async () => {
 
     if (!orderId.value) {
       status.value = "failed";
-      errorMessage.value = t("popping.createOrderFailed");
+      errorMessage.value = res?.msg || res?.message || t("popping.createOrderFailed");
       return;
     }
 
@@ -150,7 +150,7 @@ const createOrder = async () => {
     startPolling();
   } catch (error: any) {
     status.value = "failed";
-    errorMessage.value = t("popping.createOrderFailed");
+    errorMessage.value = error?.message || t("popping.createOrderFailed");
   }
 };
 

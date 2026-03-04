@@ -28,7 +28,7 @@
           <div class="duration-label">{{ t("rentingOrder.usageTime") }}</div>
         </div>
         <div class="duration-item">
-          <div class="duration-value">{{ estimatedAmount }}{{ t("rentingOrder.currency") }}</div>
+          <div class="duration-value">{{ estimatedAmount }} {{ t("rentingOrder.currency") }}</div>
           <div class="duration-label">
             {{ orderData?.isEstimated ? t("rentingOrder.estimatedAmount") : t("rentingOrder.orderAmount") }}
           </div>
@@ -43,15 +43,19 @@
         <div class="detail-row" v-if="orderData?.isEstimated">
           <span class="detail-label">{{ t("rentingOrder.orderAmount") }}</span>
           <span class="detail-value">{{ orderAmount }} {{ t("rentingOrder.currency") }}</span>
-        </div>        
+        </div>
 
-        <div class="detail-row" v-if="orderData?.borrowStore?.cabinetSn">
+        <div class="detail-row" v-if="orderData?.borrowStore?.cabinetSn || orderData?.borrowCabinetSn">
           <span class="detail-label">{{ t("rentingOrder.cabinetSn") }}</span>
-          <span class="detail-value">{{ orderData.borrowStore.cabinetSn }}</span>
+          <span class="detail-value">{{ orderData.borrowCabinetSn || orderData.borrowStore?.cabinetSn }}</span>
         </div>
 
         <div class="pricing-rules">
-          {{ t("rentingOrder.pricingRules") }}
+          <div class="pricing-rules__title" v-if="pricingRuleTitle">
+            <van-icon name="bill-o" size="13" color="#10b981" />
+            <span>{{ pricingRuleTitle }}</span>
+          </div>
+          <div class="pricing-rules__desc">{{ pricingRuleDesc }}</div>
         </div>
       </div>
 
@@ -72,7 +76,7 @@
         <div class="info-row">
           <span class="info-label">{{ t("rentingOrder.rentalLocation") }}</span>
           <span class="info-value">{{ rentalLocation }}</span>
-        </div>           
+        </div>
 
         <div class="info-row">
           <span class="info-label">{{ t("rentingOrder.orderNumber") }}</span>
@@ -90,11 +94,13 @@
         <van-button type="warning" block round class="return-store-button" @click="viewReturnStores">
           {{ t("rentingOrder.viewReturnStores") }}
         </van-button>
-        <van-button plain block round class="contact-button" @click="contactService">
+        <van-button plain block round class="contact-button" @click="showContactSheet = true">
           {{ t("rentingOrder.contactService") }}
         </van-button>
       </div>
     </div>
+
+    <ContactService v-model:show="showContactSheet" />
   </div>
 </template>
 
@@ -105,11 +111,16 @@ import { useRouter, useRoute } from "vue-router";
 import { showToast } from "vant";
 import { getOrderDetail, getRentingOrder } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
+import { ContactService } from "@/components/common";
+import { formatUtcToLocal } from "@/utils/datetime";
 
 const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+
+// 联系客服弹窗
+const showContactSheet = ref(false);
 
 // 订单数据
 const orderData = ref<any>(null);
@@ -162,6 +173,44 @@ const statusText = computed(() => {
   return orderData.value.statusText || t("rentingOrder.renting");
 });
 
+// 计费规则对象
+const pricingRule = computed(() => orderData.value?.pricingRule ?? null);
+
+// 计费规则标题（小标题行）
+const pricingRuleTitle = computed(() => {
+  const rule = pricingRule.value;
+  if (!rule) return "";
+  if (rule.freeMinutes > 0) {
+    return t("deposit.priceTitleTemplate", {
+      price: rule.pricePerHour,
+      freeMinutes: rule.freeMinutes,
+    });
+  }
+  return t("deposit.priceTitleNoFree", { price: rule.pricePerHour });
+});
+
+// 计费规则详细描述
+const pricingRuleDesc = computed(() => { 
+  
+  const rule = pricingRule.value;
+  if (!rule) return t("deposit.pricingRules");
+  const lines: string[] = [];
+  if (rule.freeMinutes > 0) {
+    lines.push(
+      t("deposit.priceDescTemplate", {
+        freeMinutes: rule.freeMinutes,
+        pricePerHour: rule.pricePerHour,
+      })
+    );
+  } else {
+    lines.push(t("deposit.priceDescNoFree", { pricePerHour: rule.pricePerHour }));
+  }
+  if (rule.maxPricePerDay > 0) {
+    lines.push(t("deposit.maxPricePerDay", { maxPrice: rule.maxPricePerDay }));
+  }
+  return lines.join(" ");
+});
+
 // 格式化时长
 const formatDuration = (minutes: number) => {
   if (!minutes || minutes <= 0) {
@@ -169,12 +218,12 @@ const formatDuration = (minutes: number) => {
   }
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  
+
   // 获取当前语言环境，判断是否需要空格（中文不需要空格，英文和法文需要）
-  const currentLocale = locale.value || 'zh-CN';
-  const needSpace = currentLocale !== 'zh-CN';
-  const space = needSpace ? ' ' : '';
-  
+  const currentLocale = locale.value || "zh-CN";
+  const needSpace = currentLocale !== "zh-CN";
+  const space = needSpace ? " " : "";
+
   if (hours > 0) {
     const hourText = hours === 1 ? t("rentingOrder.hour") : t("rentingOrder.hours");
     if (mins > 0) {
@@ -194,21 +243,9 @@ const formatAmount = (amount: number | string) => {
   return num.toFixed(2);
 };
 
-// 格式化日期时间
-const formatDateTime = (dateTime: string | Date) => {
-  if (!dateTime) return "--";
-  const date = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
-  if (isNaN(date.getTime())) return "--";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-};
+// 格式化日期时间（UTC → 本地时区，含秒）
+const formatDateTime = (dateTime: string | Date) =>
+  formatUtcToLocal(dateTime, true, "--");
 
 // 获取订单详情
 const fetchOrderDetail = async () => {
@@ -228,14 +265,14 @@ const fetchOrderDetail = async () => {
       return;
     }
 
-    // 处理返回数据
-    const data = res?.data || res;
+    // 处理返回数据：getOrderDetail 返回 res.data，getRentingOrder 返回 res.order
+    const data = orderId ? (res?.data || res) : (res?.order || res?.data || res);
     if (data) {
       orderData.value = data;
 
       // 如果订单已结束，跳转到完成页面
-      if (data.status !== 1 || data.endTime) {
-        router.replace(`/order-complete?id=${data.orderId || orderId}`);
+      if (data.status == 2) {
+        router.replace(`/order-complete?id=${data.id || data.orderId || orderId}`);
         return;
       }
     } else {
@@ -296,11 +333,6 @@ const copyOrderNumber = () => {
 // 查看可归还门店
 const viewReturnStores = () => {
   router.push("/");
-};
-
-// 联系客服
-const contactService = () => {
-  showToast(t("rentingOrder.contactServiceToast"));
 };
 
 onMounted(async () => {
@@ -391,7 +423,7 @@ onUnmounted(() => {
   display: flex;
   gap: 40px;
   position: relative;
-  }
+}
 
 .duration-item {
   flex: 1;
@@ -458,13 +490,27 @@ onUnmounted(() => {
 }
 
 .pricing-rules {
-  background: #f5f5f5;
+  background: #f0fdf4;
+  border: 1px solid #d1fae5;
   padding: 12px;
   border-radius: 8px;
-  font-size: 13px;
-  color: #666;
-  line-height: 1.6;
   margin-top: 12px;
+}
+
+.pricing-rules__title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+  margin-bottom: 6px;
+}
+
+.pricing-rules__desc {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.7;
 }
 
 .rental-info {
@@ -558,4 +604,6 @@ onUnmounted(() => {
 .contact-button:active {
   opacity: 0.7;
 }
+
+
 </style>

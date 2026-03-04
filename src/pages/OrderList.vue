@@ -44,7 +44,7 @@
 
                 <!-- 订单底部 -->
                 <div class="order-footer">
-                  <van-button plain size="small" @click.stop="contactService">
+                  <van-button plain size="small" @click.stop="showContact = true">
                     {{ t("orderList.contactService") }}
                   </van-button>
                   <van-button type="warning" size="small" @click.stop="viewReturnStores">
@@ -68,12 +68,8 @@
                   <div class="order-status completed">
                     <van-icon name="checked" />
                     {{ t("orderList.completedStatus") }}
-                    <span v-if="order.paymentStatus === 0" class="payment-status unpaid">
-                      ({{ t("orderList.unpaid") }})
-                    </span>
-                    <span v-else class="payment-status paid">
-                      ({{ t("orderList.paid") }})
-                    </span>
+                    <span v-if="order.paymentStatus === 0" class="payment-status unpaid"> ({{ t("orderList.unpaid") }}) </span>
+                    <span v-else class="payment-status paid"> ({{ t("orderList.paid") }}) </span>
                   </div>
                   <div class="order-date">{{ order.returnTime }}</div>
                 </div>
@@ -83,7 +79,7 @@
                   <div class="order-info">
                     <div class="info-item">
                       <span class="label">{{ t("orderList.rentalLocation") }}:</span>
-                      <span class="value">{{ order.location }}</span>
+                      <span class="value">{{ order.borrowStoreName }}</span>
                     </div>
                     <div class="info-item">
                       <span class="label">{{ t("orderList.duration") }}:</span>
@@ -98,16 +94,10 @@
 
                 <!-- 订单底部 -->
                 <div class="order-footer">
-                  <van-button plain size="small" @click.stop="contactService">
+                  <van-button plain size="small" @click.stop="showContact = true">
                     {{ t("orderList.contactService") }}
                   </van-button>
-                  <van-button 
-                    v-if="order.paymentStatus === 0" 
-                    type="primary" 
-                    size="small" 
-                    @click.stop="handlePay(order)"
-                    :loading="order.paying"
-                  >
+                  <van-button v-if="order.paymentStatus === 0" type="primary" size="small" @click.stop="handlePay(order)" :loading="order.paying">
                     {{ t("orderList.payNow") }}
                   </van-button>
                 </div>
@@ -117,6 +107,8 @@
         </div>
       </van-tab>
     </van-tabs>
+
+    <ContactService v-model:show="showContact" />
   </div>
 </template>
 
@@ -127,9 +119,11 @@ import { useRouter } from "vue-router";
 import { showToast, showDialog } from "vant";
 import { getOrderList, payOrder } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
+import { parseUtcDate, formatUtcToLocal } from "@/utils/datetime";
+import { ContactService } from "@/components/common";
 
 const userStore = useUserStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 
 // 当前标签页
@@ -152,31 +146,41 @@ const pageSize = 10;
 const rentingFinished = ref(false);
 const completedFinished = ref(false);
 
-// 格式化日期时间
-const formatDateTime = (dateTime: string | Date) => {
-  if (!dateTime) return "-";
-  const date = typeof dateTime === "string" ? new Date(dateTime) : dateTime;
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+// 格式化日期时间（UTC → 本地时区，不含秒）
+const formatDateTime = (dateTime: string | Date) =>
+  formatUtcToLocal(dateTime, false, "-");
+
+// 将分钟数转为多语言可读时长
+const formatDurationFromMinutes = (totalMinutes: number): string => {
+  if (totalMinutes <= 0) return `0 ${t("rentingOrder.minutes")}`;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  const space = locale.value !== "zh-CN" ? " " : "";
+  if (hours > 0) {
+    const hourText = hours === 1 ? t("rentingOrder.hour") : t("rentingOrder.hours");
+    if (mins > 0) {
+      const minuteText = mins === 1 ? t("rentingOrder.minute") : t("rentingOrder.minutes");
+      return `${hours}${space}${hourText}${space}${mins}${space}${minuteText}`;
+    }
+    return `${hours}${space}${hourText}`;
+  }
+  const minuteText = mins === 1 ? t("rentingOrder.minute") : t("rentingOrder.minutes");
+  return `${mins}${space}${minuteText}`;
 };
 
-// 格式化时长
-const formatDuration = (startTime: string | Date, endTime?: string | Date) => {
-  if (!startTime) return "-";
-  const start = typeof startTime === "string" ? new Date(startTime) : startTime;
-  const end = endTime ? (typeof endTime === "string" ? new Date(endTime) : endTime) : new Date();
-  const diff = end.getTime() - start.getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (hours > 0) {
-    return `${hours}小时${minutes}分钟`;
+// 格式化订单时长
+// 1. durationMinutes 存在 → 直接使用，无需重新计算
+// 2. 否则 → 将 startTime/endTime 作为 UTC 时间计算差值（endTime 不存在时用当前时间）
+const formatDuration = (order: any): string => {
+  if (order.durationMinutes != null) {
+    return formatDurationFromMinutes(Number(order.durationMinutes));
   }
-  return `${minutes}分钟`;
+  const startStr = order.startTime || order.createTime;
+  if (!startStr) return "-";
+  const start = parseUtcDate(startStr);
+  const end = order.endTime ? parseUtcDate(order.endTime) : new Date();
+  const totalMinutes = Math.floor(Math.max(0, end.getTime() - start.getTime()) / 60000);
+  return formatDurationFromMinutes(totalMinutes);
 };
 
 // 格式化金额
@@ -220,8 +224,8 @@ const fetchOrders = async (status: string, page: number) => {
       id: order.orderId || order.id || "",
       rentalTime: formatDateTime(order.startTime),
       returnTime: order.endTime ? formatDateTime(order.endTime) : "",
-      location: order.borrowStoreAddress || "-",
-      duration: formatDuration(order.startTime || order.createTime, order.returnTime),
+      borrowStoreName: order.borrowStoreName || "-",
+      duration: formatDuration(order),
       amount: formatAmount(order.amount || order.totalAmount || 0),
       storeId: order.borrowStoreId || "",
       paymentStatus: order.paymentStatus ?? 1, // 0: 待支付, 1: 已支付
@@ -287,10 +291,8 @@ const viewReturnStores = () => {
   router.push("/");
 };
 
-// 联系客服
-const contactService = () => {
-  showToast(t("orderList.contactServiceToast"));
-};
+// 联系客服弹窗
+const showContact = ref(false);
 
 // 支付订单
 const handlePay = async (order: any) => {
@@ -299,17 +301,17 @@ const handlePay = async (order: any) => {
   }
 
   // 确认支付对话框
-  try {  
+  try {
     // 用户确认支付
     order.paying = true;
-    
+
     try {
       // 调用支付接口（这里使用默认支付方式，实际应该让用户选择）
-      const res: any = await payOrder(order.id, "wechat"); // 默认使用微信支付，实际应该让用户选择
-      
+      const res: any = await payOrder(order.id, "paydunya"); // 默认使用微信支付，实际应该让用户选择
+
       const paymentData = res?.data || res;
       const paymentUrl = paymentData?.paymentUrl;
-      
+
       if (paymentUrl) {
         // 跳转到支付页面
         window.location.href = paymentUrl;
@@ -336,7 +338,7 @@ const refreshOrder = (order: any) => {
   order.paymentStatus = 1;
   order.paymentStatusText = t("orderList.paid");
   order.paying = false;
-  
+
   // 或者重新加载订单列表
   // completedPage.value = 1;
   // completedFinished.value = false;

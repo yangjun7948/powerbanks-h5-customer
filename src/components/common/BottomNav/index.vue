@@ -8,10 +8,12 @@
     
     <!-- 中间扫码按钮 -->
     <div class="nav-item nav-center" @click="handleScan">
-      <div class="scan-button" :class="{ 'renting-button': hasRentingOrder }">
-        <van-icon :name="hasRentingOrder ? 'clock-o' : 'scan'" size="28" color="#fff" />
+      <div class="scan-button" :class="{ 'renting-button': isRenting, 'unpaid-button': isUnpaid }">
+        <van-icon :name="isRenting ? 'clock-o' : isUnpaid ? 'balance-o' : 'scan'" size="28" color="#fff" />
       </div>
-      <span class="scan-text">{{ hasRentingOrder ? t("store.renting") : t("store.scanToRent") }}</span>
+      <span class="scan-text" :class="{ 'unpaid-text': isUnpaid }">
+        {{ isRenting ? t("store.renting") : isUnpaid ? t("store.unpaid") : t("store.scanToRent") }}
+      </span>
     </div>
     
     <!-- 右侧我的 -->
@@ -71,6 +73,9 @@ const userStore = useUserStore();
 // 是否有进行中的订单
 const hasRentingOrder = ref(false);
 const rentingOrderId = ref<string | null>(null);
+// 订单状态：1=进行中，2=已完成；paymentStatus：0=未支付，1=已支付
+const rentingOrderStatus = ref<number | null>(null);
+const rentingOrderPaymentStatus = ref<number | null>(null);
 
 // 查询进行中的订单
 const checkRentingOrder = async () => {
@@ -78,26 +83,38 @@ const checkRentingOrder = async () => {
   if (!userStore.userInfo?.userId) {
     hasRentingOrder.value = false;
     rentingOrderId.value = null;
+    rentingOrderStatus.value = null;
+    rentingOrderPaymentStatus.value = null;
     return;
   }
 
   try {
     const res: any = await getRentingOrder(userStore.userInfo.userId);
-    // 根据 API 返回的数据结构判断是否有进行中的订单
-    if (res?.hasOngoingOrder || res?.data?.orderId || res?.orderId) {
+    const order = res?.order;
+    if (res?.hasOngoingOrder && order) {
       hasRentingOrder.value = true;
-      rentingOrderId.value = res?.order?.id || res?.data?.orderId || res?.orderId || null;
+      rentingOrderId.value = String(order.id);
+      rentingOrderStatus.value = order.status ?? null;
+      rentingOrderPaymentStatus.value = order.paymentStatus ?? null;
     } else {
       hasRentingOrder.value = false;
       rentingOrderId.value = null;
+      rentingOrderStatus.value = null;
+      rentingOrderPaymentStatus.value = null;
     }
   } catch (error) {
-    // 查询失败，默认没有进行中的订单
     console.warn("查询进行中订单失败:", error);
     hasRentingOrder.value = false;
     rentingOrderId.value = null;
+    rentingOrderStatus.value = null;
+    rentingOrderPaymentStatus.value = null;
   }
 };
+
+// 是否进行中：status === 1
+const isRenting = computed(() => hasRentingOrder.value && rentingOrderStatus.value === 1);
+// 是否待支付：有订单 且 非进行中 且 paymentStatus === 0
+const isUnpaid = computed(() => hasRentingOrder.value && !isRenting.value && rentingOrderPaymentStatus.value === 0);
 
 // 左侧导航项配置
 // 如果在首页，显示订单；如果在订单列表页，显示首页；否则根据 showOrders prop 决定
@@ -158,13 +175,20 @@ const handleLeftNav = () => {
 };
 
 // 处理扫码点击
-const handleScan = async () => {
-  // 如果有进行中的订单，跳转到订单详情
+const handleScan = async () => {  
   if (hasRentingOrder.value && rentingOrderId.value) {
-    router.push(`/renting-order?id=${rentingOrderId.value}`);
-    return;
+    // status === 1：进行中 → 租借订单页
+    if (rentingOrderStatus.value === 1) {
+      router.push(`/renting-order?id=${rentingOrderId.value}`);
+      return;
+    }
+    // 未支付（paymentStatus === 0）→ 已完成订单页
+    if (rentingOrderPaymentStatus.value === 0) {
+      router.push(`/order-complete?id=${rentingOrderId.value}`);
+      return;
+    }
   }
-  // 否则跳转到扫码页面
+  // 无订单或其他状态，跳转到扫码页面
   router.push("/qr-scanner");
   emit("scan");
 };
@@ -252,6 +276,11 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
+.scan-button.unpaid-button {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
 .scan-button:active {
   transform: scale(0.95);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
@@ -265,6 +294,10 @@ onMounted(() => {
   margin-top: 4px;
   color: #333;
   font-weight: 500;
+}
+
+.scan-text.unpaid-text {
+  color: #d97706;
 }
 </style>
 

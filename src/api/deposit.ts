@@ -52,12 +52,22 @@ export function getDepositStatus(userId:string) {
   });
 }
 
+export interface VerifyPaymentResult {
+  code: number;
+  msg: string;
+  data: {
+    type: "deposit" | "rent" |"refund";
+    orderId?: string | number;
+    sn?: string;
+  };
+}
+
 /**
  * 验证 PayDunya 支付回调 token
  */
-export function verifyDepositPayment(token: string) {
+export function verifyDepositPayment(token: string): Promise<VerifyPaymentResult> {
   return request({
-    url: "/app/payment/verify/deposit",
+    url: "/app/payment/verify",
     method: "post",
     params: { token },
   });
