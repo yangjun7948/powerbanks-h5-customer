@@ -62,8 +62,8 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let redirectFn: () => void = () => {};
 
 const goToPopping = () => {
-  const sn = sessionStorage.getItem("deposit_sn") || "";
-  sessionStorage.removeItem("deposit_sn");
+  const sn = localStorage.getItem("deposit_sn") || "";
+  localStorage.removeItem("deposit_sn");
   router.replace({ path: "/popping", query: sn ? { sn } : {} });
 };
 
