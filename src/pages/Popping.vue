@@ -71,6 +71,29 @@
           {{ t("popping.backToHome") }}
         </van-button>
       </div>
+
+      <!-- 存在未归还/未支付订单，阻断创建 -->
+      <div v-else-if="status === 'blocked'" class="result-container">
+        <van-icon name="warning-o" size="64" color="#f59e0b" />
+        <h2 class="result-title">
+          {{ blockReason === "unreturned" ? t("storeDetail.hasRentingOrder") : t("storeDetail.hasUnpaidOrder") }}
+        </h2>
+        <p class="result-message">
+          {{
+            blockReason === "unreturned"
+              ? t("storeDetail.hasRentingOrderMsg")
+              : t("storeDetail.hasUnpaidOrderMsg")
+          }}
+        </p>
+        <van-button type="primary" block round class="result-button" @click="goToBlockedOrder">
+          {{
+            blockReason === "unreturned" ? t("storeDetail.viewRentingOrder") : t("storeDetail.viewUnpaidOrder")
+          }}
+        </van-button>
+        <van-button plain block round class="result-button-secondary" @click="goToHome">
+          {{ t("popping.backToHome") }}
+        </van-button>
+      </div>
     </div>
   </div>
 </template>
@@ -80,15 +103,18 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { showToast } from "vant";
-import { createRentalOrder, getPoppingStatus } from "@/api/order";
+import { createRentalOrder, getPoppingStatus, getRentingOrder } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
 const userStore = useUserStore();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 
-// 状态：loading | popping | success | failed
-const status = ref<"loading" | "popping" | "success" | "failed">("loading");
+// 状态：loading | popping | success | failed | blocked（存在未归还/未支付订单）
+const status = ref<"loading" | "popping" | "success" | "failed" | "blocked">("loading");
+// 阻断原因：unreturned 未归还订单，unpaid 未支付订单
+const blockReason = ref<"unreturned" | "unpaid" | null>(null);
+const blockOrderId = ref<string>("");
 const activeSlot = ref<number | null>(null); // 高亮的充电槽位置，null 表示未确定
 const progress = ref(0);
 const errorMessage = ref("");
@@ -110,6 +136,38 @@ const startProgress = () => {
       progress.value += 1;
     }
   }, 200);
+};
+
+// 创建租赁订单前检查是否存在未归还/未支付订单
+const checkOngoingOrder = async (): Promise<boolean> => {
+  try {
+    const res: any = await getRentingOrder(userStore.userInfo?.userId);
+    const hasOngoing = res?.hasOngoingOrder;
+    if (!hasOngoing) return true;
+
+    const order = res?.order;
+    const orderStatus = order?.status;
+    const paymentStatus = order?.paymentStatus;
+    const id = order?.id != null ? String(order.id) : "";
+
+    // 优先判断未归还（租借中）
+    if (orderStatus === 1) {
+      blockReason.value = "unreturned";
+      blockOrderId.value = id;
+      status.value = "blocked";
+      return false;
+    }
+    // 未支付
+    if (paymentStatus === 0) {
+      blockReason.value = "unpaid";
+      blockOrderId.value = id;
+      status.value = "blocked";
+      return false;
+    }
+    return true;
+  } catch {
+    return true; // 接口失败时不阻断，允许继续创建订单
+  }
 };
 
 // 创建租赁订单
@@ -242,13 +300,25 @@ const goToRentingOrder = () => {
   }
 };
 
+// 因未归还/未支付被阻断时，跳转到对应订单页
+const goToBlockedOrder = () => {
+  if (blockReason.value === "unreturned") {
+    router.replace(blockOrderId.value ? `/renting-order?id=${blockOrderId.value}` : "/renting-order");
+  } else if (blockReason.value === "unpaid") {
+    router.replace(blockOrderId.value ? `/order-complete?id=${blockOrderId.value}` : "/order-complete");
+  }
+};
+
 // 返回首页
 const goToHome = () => {
   router.replace("/");
 };
 
-onMounted(() => {
-  createOrder();
+onMounted(async () => {
+  const canProceed = await checkOngoingOrder();
+  if (canProceed) {
+    createOrder();
+  }
 });
 
 onUnmounted(() => {
