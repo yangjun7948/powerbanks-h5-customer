@@ -273,15 +273,14 @@ const createDepositOrder = async () => {
     const res: any = await createDeposit({
       userId: userStore.userInfo.userId,
       amount: depositAmount.value,
+      deviceSn: sn.value,
     });
 
     // 获取返回的支付信息
     const paymentData = res?.data || res;
     const paymentUrl = paymentData?.paymentUrl;
 
-    if (paymentUrl) {
-      // 跳转前将 sn 存入 sessionStorage，支付回调页面需要用它跳转到 popping
-      localStorage.setItem("deposit_sn", sn.value);
+    if (paymentUrl) {     
       window.location.href = paymentUrl;
     } else {
       // 如果没有 paymentUrl，显示错误提示

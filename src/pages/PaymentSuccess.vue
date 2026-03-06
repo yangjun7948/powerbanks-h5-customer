@@ -61,10 +61,8 @@ const countdown = ref(3);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let redirectFn: () => void = () => {};
 
-const goToPopping = () => {
-  const sn = localStorage.getItem("deposit_sn") || "";
-  localStorage.removeItem("deposit_sn");
-  router.replace({ path: "/popping", query: sn ? { sn } : {} });
+const goToPopping = (deviceSn: string) => {
+  router.replace({ path: "/popping", query: deviceSn ? { sn: deviceSn } : {} });
 };
 
 const goToOrderDetail = (orderId: string | number) => {
@@ -91,11 +89,11 @@ const verify = async () => {
   status.value = "verifying";
   try {
     const res = await verifyDepositPayment(token);
-    const { type, orderId } = res.data ?? {};
+    const { type, orderId,deviceSn } = res.data ?? {};
     if (type === "rent" && orderId) {
       redirectFn = () => goToOrderDetail(orderId);
     } else {
-      redirectFn = goToPopping;
+      redirectFn = () => goToPopping(deviceSn);
     }
     status.value = "success";
     startCountdown();

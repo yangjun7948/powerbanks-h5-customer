@@ -6,6 +6,7 @@ import request from "@/utils/request";
 export function createDeposit(params: {
     userId: number;  
     amount: number;
+    deviceSn: string;
 }) {
   return request({
     url: "/app/payment/deposit/create",
@@ -58,7 +59,7 @@ export interface VerifyPaymentResult {
   data: {
     type: "deposit" | "rent" |"refund";
     orderId?: string | number;
-    sn?: string;
+    deviceSn?: string;
   };
 }
 
