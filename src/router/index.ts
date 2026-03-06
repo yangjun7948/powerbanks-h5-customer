@@ -159,18 +159,9 @@ router.beforeEach((to, from, next) => {
   // 检查用户是否登录
   if (!ss.get("token")) {
     //添加弹窗提醒，点击确认跳转登录页
-    showDialog({
-      title: i18n.global.t("common.tip"),
-      message: i18n.global.t("routes.needLogin"),
-      confirmButtonText: i18n.global.t("routes.goLogin"),
-      cancelButtonText: i18n.global.t("routes.thinkAgain"),
-      confirmButtonColor: "#3b82f6",
-      showCancelButton: true,
-    }).then(() => {
-      next({
-        path: "/login",
-        query: { redirect: to.fullPath },
-      });
+    next({
+      path: "/login",
+      query: { redirect: to.fullPath },
     });
     return;
   }
