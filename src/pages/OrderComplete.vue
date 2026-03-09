@@ -62,7 +62,10 @@
           <van-icon name="info-o" size="16" color="#f59e0b" />
           <span>{{ t("orderComplete.unpaidNotice") }}</span>
         </div>
+        <div class="action-area">
+          <van-button v-if="paymentStatus === 0" type="warning" block round class="pay-button" @click="handlePay" :loading="paying"> {{ t("orderList.payNow") }} · FCFA {{ orderAmount }} </van-button>
 
+        </div>
         <!-- ③ 订单详情 -->
         <div class="order-details">
           <div class="section-title">{{ t("orderComplete.orderInfo") }}</div>
@@ -89,7 +92,6 @@
             </span>
           </div>
         </div>
-
         <!-- ④ 资金结算说明（有押金时） -->
         <div class="settlement-section" v-if="depositAmountValue > 0">
           <div class="section-title">{{ t("orderComplete.settlementTitle") }}</div>
@@ -115,17 +117,7 @@
 
         <!-- ⑤ 操作按钮 -->
         <div class="action-area">
-          <van-button
-            v-if="paymentStatus === 0"
-            type="warning"
-            block round
-            class="pay-button"
-            @click="handlePay"
-            :loading="paying"
-          >
-            {{ t("orderList.payNow") }} · FCFA {{ orderAmount }}
-          </van-button>
-
+       
           <van-button type="primary" block round class="home-button" @click="goHome">
             {{ t("orderComplete.backToHome") }}
           </van-button>
@@ -197,25 +189,17 @@ const returnTime = computed(() => {
 
 const rentalLocation = computed(() => {
   if (!orderData.value) return "--";
-  return orderData.value.borrowStoreName
-    || orderData.value.borrowStore?.storeName
-    || orderData.value.borrowStore?.storeAddress
-    || "--";
+  return orderData.value.borrowStoreName || orderData.value.borrowStore?.storeName || orderData.value.borrowStore?.storeAddress || "--";
 });
 
 const returnLocation = computed(() => {
   if (!orderData.value) return "--";
-  return orderData.value.returnStoreName
-    || orderData.value.returnStore?.storeName
-    || orderData.value.returnStore?.storeAddress
-    || "--";
+  return orderData.value.returnStoreName || orderData.value.returnStore?.storeName || orderData.value.returnStore?.storeAddress || "--";
 });
 
 const powerBankSN = computed(() => {
   if (!orderData.value) return "--";
-  return orderData.value.powerbankSn
-    || orderData.value.powerbank?.powerbankSn
-    || "--";
+  return orderData.value.powerbankSn || orderData.value.powerbank?.powerbankSn || "--";
 });
 
 const orderNumber = computed(() => {
@@ -331,8 +315,7 @@ const formatAmount = (amount: number | string) => {
 };
 
 // 格式化日期时间（UTC → 本地时区，含秒）
-const formatDateTime = (dateTime: string | Date) =>
-  formatUtcToLocal(dateTime, true, "--");
+const formatDateTime = (dateTime: string | Date) => formatUtcToLocal(dateTime, true, "--");
 
 // 获取订单详情
 const fetchOrderDetail = async () => {
@@ -401,15 +384,6 @@ const handlePay = async () => {
 
   // 确认支付对话框
   try {
-    await showDialog({
-      title: t("orderList.payConfirmTitle"),
-      message: t("orderList.payConfirmMessage", {
-        amount: `${t("rentingOrder.currency")}${orderAmount.value}`,
-      }),
-      confirmButtonText: t("orderList.confirmPay"),
-      cancelButtonText: t("orderList.cancel"),
-    });
-
     // 用户确认支付
     paying.value = true;
 
