@@ -271,10 +271,11 @@ const pricingRuleDesc = computed(() => {
       t("deposit.priceDescTemplate", {
         freeMinutes: rule.freeMinutes,
         pricePerHour: rule.pricePerHour,
+        pricePerHalfHour: Math.round(rule.pricePerHour / 2),
       })
     );
   } else {
-    lines.push(t("deposit.priceDescNoFree", { pricePerHour: rule.pricePerHour }));
+    lines.push(t("deposit.priceDescNoFree", { pricePerHour: rule.pricePerHour, pricePerHalfHour: Math.round(rule.pricePerHour / 2) }));
   }
   if (rule.maxPricePerDay > 0) {
     lines.push(t("deposit.maxPricePerDay", { maxPrice: rule.maxPricePerDay }));

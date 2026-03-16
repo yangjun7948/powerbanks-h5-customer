@@ -219,10 +219,12 @@ const formatPriceDesc = () => {
     desc = t("deposit.priceDescTemplate", {
       freeMinutes: freeMinutes,
       pricePerHour: pricePerHour,
+      pricePerHalfHour: Math.round(pricePerHour / 2),
     });
   } else {
     desc = t("deposit.priceDescNoFree", {
       pricePerHour: pricePerHour,
+      pricePerHalfHour: Math.round(pricePerHour / 2),
     });
   }
 
