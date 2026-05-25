@@ -150,6 +150,12 @@ export const lang = {
     contactServiceToast: "Customer service feature is under development",
     orderNotFound: "Order not found",
     loadFailed: "Failed to load order, please try again",
+    purchaseButton: "Buy Power Bank",
+    purchaseTip: "Like this power bank? Buy it and it's yours to keep!",
+    purchaseConfirmTitle: "Confirm Purchase",
+    purchaseConfirmMessage: "After purchase, the power bank is yours and this order will be settled. Price: FCFA {price}",
+    purchaseSuccess: "Purchase successful",
+    purchaseFailed: "Purchase failed",
   },
   rentingOrder: {
     title: "Renting Order",

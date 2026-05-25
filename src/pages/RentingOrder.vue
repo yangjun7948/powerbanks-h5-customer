@@ -89,6 +89,17 @@
         </div>
       </div>
 
+      <!-- 购买充电宝 -->
+      <div v-if="!loading && purchasePrice > 0" class="purchase-section">
+        <van-button plain type="primary" block round class="purchase-button" @click="handlePurchase" :loading="purchasing">
+          {{ t("orderComplete.purchaseButton") }} · FCFA {{ formatAmount(purchasePrice) }}
+        </van-button>
+        <div class="purchase-tip">
+          <van-icon name="bulb-o" size="16" color="#8b5cf6" />
+          <span>{{ t("orderComplete.purchaseTip") }}</span>
+        </div>
+      </div>
+
       <!-- 底部按钮 -->
       <div v-if="!loading" class="action-buttons">
         <van-button type="warning" block round class="return-store-button" @click="viewReturnStores">
@@ -108,8 +119,8 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
-import { showToast } from "vant";
-import { getOrderDetail, getRentingOrder } from "@/api/order";
+import { showToast, showDialog } from "vant";
+import { getOrderDetail, getRentingOrder, purchasePowerbank, getPurchasePrice } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
 import { ContactService } from "@/components/common";
 import { formatUtcToLocal } from "@/utils/datetime";
@@ -125,6 +136,8 @@ const showContactSheet = ref(false);
 // 订单数据
 const orderData = ref<any>(null);
 const loading = ref(false);
+const purchasing = ref(false);
+const purchasePrice = ref<number>(0);
 
 // 折叠状态
 const isCollapsed = ref(false);
@@ -335,8 +348,53 @@ const viewReturnStores = () => {
   router.push("/");
 };
 
+// 购买充电宝
+const handlePurchase = async () => {
+  if (purchasing.value) return;
+
+  try {
+    await showDialog({
+      title: t("orderComplete.purchaseConfirmTitle"),
+      message: t("orderComplete.purchaseConfirmMessage", { price: formatAmount(purchasePrice.value) }),
+      confirmButtonText: t("common.confirm"),
+      cancelButtonText: t("common.cancel"),
+      showCancelButton: true,
+    });
+
+    purchasing.value = true;
+    const orderId = Number(route.query.id || orderData.value?.id);
+    const res: any = await purchasePowerbank(orderId);
+    const paymentData = res?.data || res;
+    const paymentUrl = paymentData?.paymentUrl;
+
+    if (paymentUrl) {
+      window.location.href = paymentUrl;
+    } else {
+      showToast(t("orderComplete.purchaseSuccess"));
+      router.replace(`/order-complete?id=${orderId}`);
+    }
+  } catch (error: any) {
+    if (error !== "cancel" && error?.message) {
+      showToast(error.message || t("orderComplete.purchaseFailed"));
+    }
+    purchasing.value = false;
+  }
+};
+
+// 获取购买价格
+const fetchPurchasePrice = async () => {
+  try {
+    const res: any = await getPurchasePrice();
+    const data = res?.data || res;
+    purchasePrice.value = parseFloat(data?.price || 0);
+  } catch {
+    purchasePrice.value = 0;
+  }
+};
+
 onMounted(async () => {
   await fetchOrderDetail();
+  fetchPurchasePrice();
 
   // 启动计时器，每分钟更新一次时长
   if (orderData.value?.startTime) {
@@ -605,5 +663,34 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
+.purchase-section {
+  margin-bottom: 16px;
+}
 
+.purchase-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.purchase-button:active {
+  transform: translateY(1px);
+  background: #f5f3ff;
+}
+
+.purchase-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #5b21b6;
+  line-height: 1.5;
+}
 </style>

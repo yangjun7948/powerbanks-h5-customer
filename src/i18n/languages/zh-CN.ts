@@ -148,6 +148,12 @@ export const lang = {
     contactServiceToast: "客服功能开发中",
     orderNotFound: "订单不存在",
     loadFailed: "加载订单失败，请重试",
+    purchaseButton: "购买充电宝",
+    purchaseTip: "如果您喜欢这款充电宝，可直接付款购买归您所有",
+    purchaseConfirmTitle: "确认购买",
+    purchaseConfirmMessage: "购买后该充电宝归您所有，本订单将直接结清。购买价格：FCFA {price}",
+    purchaseSuccess: "购买成功",
+    purchaseFailed: "购买失败",
   },
   rentingOrder: {
     title: "租借中订单",

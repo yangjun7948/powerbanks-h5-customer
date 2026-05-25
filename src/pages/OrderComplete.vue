@@ -62,9 +62,14 @@
           <van-icon name="info-o" size="16" color="#f59e0b" />
           <span>{{ t("orderComplete.unpaidNotice") }}</span>
         </div>
+
         <div class="action-area">
           <van-button v-if="paymentStatus === 0" type="warning" block round class="pay-button" @click="handlePay" :loading="paying"> {{ t("orderList.payNow") }} · FCFA {{ orderAmount }} </van-button>
-
+          <van-button v-if="paymentStatus === 0 && purchasePrice > 0" plain type="primary" block round class="purchase-button" @click="handlePurchase" :loading="purchasing"> {{ t("orderComplete.purchaseButton") }} · FCFA {{ formatAmount(purchasePrice) }} </van-button>
+          <div class="purchase-tip" v-if="paymentStatus === 0 && purchasePrice > 0">
+            <van-icon name="bulb-o" size="16" color="#8b5cf6" />
+            <span>{{ t("orderComplete.purchaseTip") }}</span>
+          </div>
         </div>
         <!-- ③ 订单详情 -->
         <div class="order-details">
@@ -141,7 +146,7 @@ import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { showToast, showDialog } from "vant";
-import { getOrderDetail, payOrder } from "@/api/order";
+import { getOrderDetail, payOrder, purchasePowerbank, getPurchasePrice } from "@/api/order";
 import { useUserStore } from "@/store/modules/user";
 import { ContactService } from "@/components/common";
 import { formatUtcToLocal } from "@/utils/datetime";
@@ -156,6 +161,8 @@ const orderData = ref<any>(null);
 const loading = ref(false);
 const depositAmount = ref(0);
 const paying = ref(false);
+const purchasing = ref(false);
+const purchasePrice = ref<number>(0);
 const showContact = ref(false);
 
 // 计算属性
@@ -415,8 +422,53 @@ const handlePay = async () => {
   }
 };
 
+// 购买充电宝
+const handlePurchase = async () => {
+  if (purchasing.value) return;
+
+  try {
+    await showDialog({
+      title: t("orderComplete.purchaseConfirmTitle"),
+      message: t("orderComplete.purchaseConfirmMessage", { price: formatAmount(purchasePrice.value) }),
+      confirmButtonText: t("common.confirm"),
+      cancelButtonText: t("common.cancel"),
+      showCancelButton: true,
+    });
+
+    purchasing.value = true;
+    const orderId = Number(route.query.id);
+    const res: any = await purchasePowerbank(orderId);
+    const paymentData = res?.data || res;
+    const paymentUrl = paymentData?.paymentUrl;
+
+    if (paymentUrl) {
+      window.location.href = paymentUrl;
+    } else {
+      showToast(t("orderComplete.purchaseSuccess"));
+      await fetchOrderDetail();
+    }
+  } catch (error: any) {
+    if (error !== "cancel" && error?.message) {
+      showToast(error.message || t("orderComplete.purchaseFailed"));
+    }
+    purchasing.value = false;
+  }
+};
+
+// 获取购买价格
+const fetchPurchasePrice = async () => {
+  try {
+    const res: any = await getPurchasePrice();
+    const data = res?.data || res;
+    purchasePrice.value = parseFloat(data?.price || 0);
+  } catch {
+    purchasePrice.value = 0;
+  }
+};
+
 onMounted(() => {
   fetchOrderDetail();
+  fetchPurchasePrice();
 });
 </script>
 
@@ -759,6 +811,21 @@ onMounted(() => {
   line-height: 1.5;
 }
 
+/* 购买提示 */
+.purchase-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #5b21b6;
+  line-height: 1.5;
+}
+
 /* 操作区 */
 .action-area {
   margin-top: 8px;
@@ -778,6 +845,20 @@ onMounted(() => {
 .pay-button:active {
   transform: translateY(1px);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.purchase-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  margin-bottom: 12px;
+}
+
+.purchase-button:active {
+  transform: translateY(1px);
+  background: #f5f3ff;
 }
 
 .home-button {

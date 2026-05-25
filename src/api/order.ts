@@ -68,3 +68,27 @@ export function payOrder(orderId: number, paymentMethod: string) {
     },
   });
 }
+
+/**
+ * 购买充电宝
+ */
+export function purchasePowerbank(orderId: number, channel?: string) {
+  return request<any>({
+    url: `/app/payment/purchase/create`,
+    method: "post",
+    params: {
+      orderId,
+      channel: channel || "paydunya",
+    },
+  });
+}
+
+/**
+ * 获取充电宝购买价格
+ */
+export function getPurchasePrice() {
+  return request<any>({
+    url: `/app/payment/purchase/price`,
+    method: "get",
+  });
+}

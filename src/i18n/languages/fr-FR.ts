@@ -149,6 +149,12 @@ export const lang = {
     contactServiceToast: "Service bientôt disponible.",
     orderNotFound: "Commande introuvable",
     loadFailed: "Erreur de chargement",
+    purchaseButton: "Acheter la Power Bank",
+    purchaseTip: "Vous aimez cette Power Bank ? Achetez-la et elle est à vous !",
+    purchaseConfirmTitle: "Confirmer l'achat",
+    purchaseConfirmMessage: "Après l'achat, la Power Bank vous appartient et cette commande sera clôturée. Prix : FCFA {price}",
+    purchaseSuccess: "Achat réussi",
+    purchaseFailed: "Échec de l'achat",
   },
   rentingOrder: {
     title: "Location en cours",
