@@ -67,6 +67,9 @@ const loading = ref(false);
 const finished = ref(false);
 const page = ref(1);
 const pageSize = 10;
+// 独立的请求中标记：不能复用 van-list 的 loading 做防重入，
+// 因为 van-list 会在触发 @load 之前先把 loading 置为 true，会导致请求被误拦截。
+let isFetching = false;
 const latitude = ref<number | null>(null);
 const longitude = ref<number | null>(null);
 const locationError = ref<string | null>(null);
@@ -179,16 +182,18 @@ const getUserLocation = (): Promise<GeolocationPosition> => {
 
 // 加载数据
 const onLoad = async () => {
-  if (loading.value) return;
-
+  // 用独立标记防重入，避免与 van-list 的 loading 冲突
+  if (isFetching) return;
+  isFetching = true;
   loading.value = true;
   try {
-    // 调用API，带上经纬度信息
+    // 调用API：status 走 RuoYi 的 params 约定（序列化为 params[status]，
+    // 后端读取 BaseEntity.params.status）；分页字段后端使用 pageNum/pageSize
     const params: any = {
       params: {
         status: activeTab.value,
       },
-      page: page.value,
+      pageNum: page.value,
       pageSize,
     };
 
@@ -200,16 +205,21 @@ const onLoad = async () => {
 
     const res: any = await getStoreList(params);
 
-    // API 返回的数据结构：res.data 或 res.data.rows 或 res.rows
-    const rows = res?.data?.rows || res?.rows || res?.data || [];
+    // 后端返回 TableDataInfo：{ total, rows }
+    const rows = res?.rows || res?.data?.rows || res?.data || [];
+    const total = Number(res?.total ?? 0);
     storeList.value.push(...rows);
     page.value++;
-    finished.value = rows.length < pageSize;
+    // 结束条件：本页不足一页，或已加载数量达到总数
+    finished.value = rows.length < pageSize || storeList.value.length >= total;
   } catch (error: any) {
     console.error("加载门店列表失败:", error);
     showToast(error?.message || "加载失败");
+    // 出错时结束加载，避免 van-list 不停重试导致一直 loading
+    finished.value = true;
   } finally {
     loading.value = false;
+    isFetching = false;
   }
 };
 
@@ -293,8 +303,10 @@ onMounted(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 80px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* 不要在这里设 overflow-y:auto：该元素只有 min-height 没有固定高度，
+     不会真正内部滚动，但会被 van-list 误判为滚动容器（其底边始终贴着列表底部），
+     导致还没滚到底就不停加载下一页。真正的滚动容器是 #app（height:100%+overflow-y:auto），
+     去掉这里的 overflow 后 van-list 会向上找到 #app，从而正确判断是否滚动到底。 */
 }
 
 .header {
