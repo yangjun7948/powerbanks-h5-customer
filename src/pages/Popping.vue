@@ -36,6 +36,12 @@
           <span>{{ t("popping.notice") }}</span>
         </div>
 
+        <!-- 安心文案：弹出成功后才计费，弹出失败不收费 -->
+        <div class="fee-notice">
+          <van-icon name="shield-o" color="#10b981" size="16" />
+          <span>{{ t("popping.feeNotice") }}</span>
+        </div>
+
         <!-- 进度条（仅在弹出中状态显示） -->
         <div v-if="status === 'popping'" class="progress-container">
           <div class="progress-bar">
@@ -451,6 +457,23 @@ onUnmounted(() => {
   font-size: 15px;
   color: #4080ff;
   font-weight: 500;
+}
+
+.fee-notice {
+  background: #ecfdf5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.fee-notice span {
+  flex: 1;
+  font-size: 13px;
+  color: #059669;
+  line-height: 1.5;
 }
 
 .progress-container {

@@ -116,8 +116,9 @@ export const lang = {
     success: "充电宝弹出成功",
     failed: "弹出失败",
     creating: "正在创建订单...",
+    feeNotice: "充电宝成功弹出后才开始计费，弹出失败不收取任何费用",
     successMessage: "充电宝已成功弹出，请及时取出",
-    failedMessage: "充电宝弹出失败，请重试",
+    failedMessage: "充电宝未弹出，本次未产生任何费用，请重试",
     createOrderFailed: "创建订单失败，请重试",
     snRequired: "缺少设备编号参数",
     viewOrder: "查看订单",
@@ -158,6 +159,7 @@ export const lang = {
   rentingOrder: {
     title: "租借中订单",
     renting: "租借中",
+    ejecting: "充电宝弹出中…",
     tip: "每个用户限借 1 台，归还可直接插入空位",
     usageTime: "使用时长",
     estimatedAmount: "预估金额",

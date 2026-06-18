@@ -117,8 +117,9 @@ export const lang = {
     success: "Power Bank déverrouillé !",
     failed: "Échec de la sortie",
     creating: "Création de la location...",
+    feeNotice: "La facturation ne démarre qu'après la sortie du Power Bank. En cas d'échec, aucun frais n'est prélevé.",
     successMessage: "Il est prêt ! Veuillez le retirer maintenant.",
-    failedMessage: "Le Power Bank n'est pas sorti. Veuillez réessayer.",
+    failedMessage: "Le Power Bank n'est pas sorti et aucun frais n'a été prélevé. Veuillez réessayer.",
     createOrderFailed: "Erreur de commande. Veuillez réessayer.",
     snRequired: "Erreur technique : SN manquant",
     viewOrder: "Voir ma location",
@@ -159,6 +160,7 @@ export const lang = {
   rentingOrder: {
     title: "Location en cours",
     renting: "En cours",
+    ejecting: "Sortie du Power Bank…",
     tip: "1 batterie max/personne. Pour rendre, insérez-la dans un port vide.",
     usageTime: "Durée d'utilisation",
     estimatedAmount: "Montant estimé",

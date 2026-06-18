@@ -118,8 +118,9 @@ export const lang = {
     success: "Power bank ejected successfully",
     failed: "Popping failed",
     creating: "Creating order...",
+    feeNotice: "Billing starts only after the power bank is ejected. If ejection fails, you won't be charged.",
     successMessage: "Power bank has been successfully popped, please take it out in time",
-    failedMessage: "Power bank popping failed, please try again",
+    failedMessage: "The power bank was not ejected and no charge was made. Please try again.",
     createOrderFailed: "Failed to create order, please try again",
     snRequired: "Missing device code parameter",
     viewOrder: "View Order",
@@ -160,6 +161,7 @@ export const lang = {
   rentingOrder: {
     title: "Renting Order",
     renting: "Renting",
+    ejecting: "Ejecting power bank…",
     tip: "Each user can borrow 1 unit, return by inserting directly into the slot",
     usageTime: "Usage Time",
     estimatedAmount: "Estimated Amount",

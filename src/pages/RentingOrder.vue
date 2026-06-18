@@ -21,8 +21,14 @@
       <!-- 提示信息 -->
       <div v-if="!loading" class="tip-text">{{ t("rentingOrder.tip") }}</div>
 
+      <!-- 弹出确认前：还未开始计费，展示“弹出中”而非 0 分钟 / 0.00 -->
+      <div v-if="!loading && isEjecting" class="duration-card ejecting-card">
+        <van-loading type="spinner" size="20" />
+        <span class="ejecting-text">{{ t("rentingOrder.ejecting") }}</span>
+      </div>
+
       <!-- 时长和金额卡片 -->
-      <div v-if="!loading" class="duration-card">
+      <div v-else-if="!loading" class="duration-card">
         <div class="duration-item">
           <div class="duration-value">{{ usageDuration }}</div>
           <div class="duration-label">{{ t("rentingOrder.usageTime") }}</div>
@@ -184,6 +190,13 @@ const orderNumber = computed(() => {
 const statusText = computed(() => {
   if (!orderData.value) return t("rentingOrder.renting");
   return orderData.value.statusText || t("rentingOrder.renting");
+});
+
+// 弹出尚未确认（待设备弹出 PENDING_DEVICE，startTime 为空）：此时还未开始计费，
+// 不展示时长/金额，避免“东西没出来钱表已在跳”的误导
+const isEjecting = computed(() => {
+  if (!orderData.value) return false;
+  return orderData.value.status === 0 || !orderData.value.startTime;
 });
 
 // 计费规则对象
@@ -481,6 +494,18 @@ onUnmounted(() => {
   display: flex;
   gap: 40px;
   position: relative;
+}
+
+.ejecting-card {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ejecting-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4080ff;
 }
 
 .duration-item {
